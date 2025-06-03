@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Mini App 商店</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: 'PingFang SC', Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+    .container { max-width: 480px; margin: auto; padding: 20px; }
+    .item { background: #fff; border-radius: 18px; box-shadow: 0 2px 8px #0001; margin-bottom: 20px; padding: 16px; }
+    .item-header { display: flex; align-items: center; }
+    .item-img { width: 72px; height: 72px; border-radius: 12px; object-fit: cover; margin-right: 12px; }
+    .badge { margin-left: 5px; font-size: 13px; font-weight: bold; border-radius: 8px; padding: 2px 10px; color: #fff; }
+    .badge.hot { background: #ff5e2f; }
+    .badge.new { background: #2faaff; }
+    .item-title { font-size: 20px; font-weight: bold; }
+    .item-desc { font-size: 14px; color: #555; margin: 8px 0 0 0; }
+    .item-specs { margin: 12px 0 6px 0; }
+    .item-specs label { margin-right: 16px; }
+    .add-cart { margin-top: 10px; }
+    button { background: #2faaff; color: #fff; border: none; border-radius: 12px; font-size: 15px; padding: 8px 24px; cursor: pointer; }
+    button:active { background: #1990e6; }
+    .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; box-shadow: 0 -1px 8px #0002; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="item" data-id="1">
+    <div class="item-header">
+      <img class="item-img" src="https://imgur.com/9G85UF6.png" />
+      <div>
+        <span class="item-title">经典拿铁</span>
+        <span class="badge hot">Hot Sale</span>
+        <div class="item-desc">顺滑香浓，冷热皆宜</div>
+      </div>
+    </div>
+    <div class="item-specs">
+      <label><input type="radio" name="spec-1" value="大杯" checked>大杯 $7</label>
+      <label><input type="radio" name="spec-1" value="中杯">中杯 $6</label>
+      <label><input type="radio" name="spec-1" value="小杯">小杯 $5</label>
+    </div>
+    <div class="add-cart">
+      <button onclick="addToCart(1)">加入购物车</button>
+    </div>
+  </div>
+  <div class="item" data-id="2">
+    <div class="item-header">
+      <img class="item-img" src="https://imgur.com/xYl5pZl.png" />
+      <div>
+        <span class="item-title">黑巧摩卡</span>
+        <span class="badge new">New</span>
+        <div class="item-desc">巧克力控必喝，香醇升级</div>
+      </div>
+    </div>
+    <div class="item-specs">
+      <label><input type="radio" name="spec-2" value="大杯" checked>大杯 $8</label>
+      <label><input type="radio" name="spec-2" value="中杯">中杯 $7</label>
+      <label><input type="radio" name="spec-2" value="小杯">小杯 $6</label>
+    </div>
+    <div class="add-cart">
+      <button onclick="addToCart(2)">加入购物车</button>
+    </div>
+  </div>
+  <div class="item" data-id="3">
+    <div class="item-header">
+      <img class="item-img" src="https://imgur.com/LbQOVbB.png" />
+      <div>
+        <span class="item-title">燕麦奶茶</span>
+        <div class="item-desc">健康低卡，无乳糖</div>
+      </div>
+    </div>
+    <div class="item-specs">
+      <label><input type="radio" name="spec-3" value="大杯" checked>大杯 $6</label>
+      <label><input type="radio" name="spec-3" value="中杯">中杯 $5</label>
+      <label><input type="radio" name="spec-3" value="小杯">小杯 $4</label>
+    </div>
+    <div class="add-cart">
+      <button onclick="addToCart(3)">加入购物车</button>
+    </div>
+  </div>
+</div>
+<div id="cartBar" class="cart-bar" style="display:none">
+  <span id="cartTotal">已选 0 件 | 总价 $0</span>
+  <button onclick="submitOrder()">提交订单</button>
+</div>
+<script>
+  // 简单购物车
+  let cart = [];
+  const itemData = {
+    1: {name: '经典拿铁', prices: {大杯: 7, 中杯: 6, 小杯: 5}},
+    2: {name: '黑巧摩卡', prices: {大杯: 8, 中杯: 7, 小杯: 6}},
+    3: {name: '燕麦奶茶', prices: {大杯: 6, 中杯: 5, 小杯: 4}}
+  };
+  function addToCart(id) {
+    const spec = document.querySelector(`input[name="spec-${id}"]:checked`).value;
+    const price = itemData[id].prices[spec];
+    cart.push({id, name: itemData[id].name, spec, price});
+    updateCartBar();
+  }
+  function updateCartBar() {
+    if (cart.length === 0) {
+      document.getElementById('cartBar').style.display = 'none';
+    } else {
+      document.getElementById('cartBar').style.display = '';
+      let total = cart.reduce((s, c) => s + c.price, 0);
+      document.getElementById('cartTotal').innerText = `已选 ${cart.length} 件 | 总价 $${total}`;
+    }
+  }
+  function submitOrder() {
+    if (cart.length === 0) return;
+    // 发回 Telegram WebApp
+    if (window.Telegram.WebApp) {
+      Telegram.WebApp.sendData(JSON.stringify(cart));
+      Telegram.WebApp.close();
+    } else {
+      alert("请在 Telegram 客户端内打开 Mini App 使用下单功能！");
+    }
+  }
+</script>
+</body>
+</html>
