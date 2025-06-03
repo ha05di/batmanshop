@@ -79,12 +79,14 @@
   function submitOrder() {
     if (cart.length === 0) return;
     if (window.Telegram && Telegram.WebApp) {
-      Telegram.WebApp.sendData(JSON.stringify(cart));
-      Telegram.WebApp.close();
+        alert("已点击提交，将调用 sendData");  // <---加这行
+        Telegram.WebApp.sendData(JSON.stringify(cart));
+        Telegram.WebApp.close();
     } else {
-      alert("请在 Telegram 客户端内打开 Mini App 使用下单功能！");
+        alert("请在 Telegram 客户端内打开 Mini App 使用下单功能！");
     }
-  }
+}
+
 </script>
 </body>
 </html>
