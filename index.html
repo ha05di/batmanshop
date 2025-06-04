@@ -1,45 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <title>Batman1788 下单</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2em; }
+    .login-box { margin-bottom: 2em; }
+    form { max-width: 360px; margin: 0 auto; }
+    label { display: block; margin-top: 1em; }
+    input, select { width: 100%; padding: 0.5em; margin-top: 0.3em; }
+    button { margin-top: 1.2em; width: 100%; padding: 0.7em; }
+    #result { margin-top: 2em; font-weight: bold; }
+  </style>
 </head>
 <body>
-  <h2>下单表单</h2>
+  <h2>Batman1788 下单表单</h2>
+  <div class="login-box">
+    <!-- Telegram 登录控件 -->
+    <script async src="https://telegram.org/js/telegram-widget.js?7"
+      data-telegram-login="batmangiveawaybot"  <!-- 换成你的Bot用户名，无@ -->
+      data-size="large"
+      data-radius="10"
+      data-request-access="write"
+      data-userpic="false"
+      data-onauth="onTelegramAuth(user)">
+    </script>
+    <div id="login-status"></div>
+  </div>
+
   <form id="orderForm">
-    姓名：<input name="name" required><br>
-    电话：<input name="phone" required><br>
-    商品：
-    <select name="item">
-      <option value="经典拿铁">经典拿铁</option>
-      <option value="黑巧摩卡">黑巧摩卡</option>
-      <option value="燕麦奶茶">燕麦奶茶</option>
-    </select><br>
-    规格：
-    <select name="spec">
-      <option value="大杯">大杯</option>
-      <option value="中杯">中杯</option>
-      <option value="小杯">小杯</option>
-    </select><br>
-    数量：<input name="qty" type="number" value="1" min="1"><br>
-    备注：<input name="note"><br>
+    <input type="hidden" id="tg_id" name="tg_id">
+    <input type="hidden" id="tg_name" name="tg_name">
+
+    <label>姓名
+      <input name="name" required>
+    </label>
+    <label>电话
+      <input name="phone" required>
+    </label>
+    <label>商品
+      <select name="item">
+        <option value="经典拿铁">经典拿铁</option>
+        <option value="黑巧摩卡">黑巧摩卡</option>
+        <option value="燕麦奶茶">燕麦奶茶</option>
+      </select>
+    </label>
+    <label>规格
+      <select name="spec">
+        <option value="大杯">大杯</option>
+        <option value="中杯">中杯</option>
+        <option value="小杯">小杯</option>
+      </select>
+    </label>
+    <label>数量
+      <input name="qty" type="number" value="1" min="1">
+    </label>
+    <label>备注
+      <input name="note">
+    </label>
     <button type="submit">提交订单</button>
   </form>
   <div id="result"></div>
   <script>
+    // 登录回调
+    function onTelegramAuth(user) {
+      document.getElementById('tg_id').value = user.id;
+      document.getElementById('tg_name').value = user.first_name + (user.last_name ? (' ' + user.last_name) : '');
+      document.getElementById('login-status').innerHTML =
+        `<b>已登录 Telegram：</b> <span style="color:green">${user.first_name} (${user.id})</span>`;
+      window.is_tg_logged_in = true;
+    }
+    // 表单提交
     document.getElementById('orderForm').onsubmit = async function(e) {
       e.preventDefault();
+      if (!document.getElementById('tg_id').value) {
+        alert('请先使用 Telegram 登录！');
+        return;
+      }
       const data = Object.fromEntries(new FormData(this));
-      const resp = await fetch("https://batmanshop.onrender.com/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      if (resp.ok) {
-        document.getElementById("result").innerText = "下单成功！";
-        this.reset();
-      } else {
-        document.getElementById("result").innerText = "提交失败！";
+      document.getElementById("result").innerText = "正在提交...";
+      try {
+        const resp = await fetch("https://batmanshop.onrender.com/order", { // 换成你的后端 Render 域名
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        if (resp.ok) {
+          document.getElementById("result").innerText = "下单成功！已通知管理员～";
+          this.reset();
+        } else {
+          document.getElementById("result").innerText = "提交失败，请稍后重试。";
+        }
+      } catch (e) {
+        document.getElementById("result").innerText = "网络错误，提交失败。";
       }
     }
   </script>
