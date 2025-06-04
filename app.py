@@ -5,6 +5,7 @@ BOT_TOKEN = '7582978452:AAE1Zdz62epr589ezQSnZS9TdraznuW2Rgw'
 CHAT_ID = '6837915435'  # 填你自己/群组/管理员的 chat_id
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/order', methods=['POST'])
 def order():
