@@ -1,94 +1,47 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Mini App 商店</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body { font-family: 'PingFang SC', Arial, sans-serif; background: #f6f8fa; margin: 0; padding: 0; }
-    .container { max-width: 480px; margin: auto; padding: 20px; }
-    .item { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px #0001; margin-bottom: 20px; padding: 16px; }
-    .item-title { font-size: 20px; font-weight: bold; }
-    .item-desc { font-size: 14px; color: #555; margin: 8px 0 0 0; }
-    .item-specs label { margin-right: 12px; }
-    button { background: #2faaff; color: #fff; border: none; border-radius: 12px; font-size: 16px; padding: 8px 24px; cursor: pointer; margin-top: 8px;}
-    button:active { background: #1990e6; }
-    .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; box-shadow: 0 -1px 8px #0002; }
-  </style>
+  <title>Batman1788 下单</title>
 </head>
 <body>
-<div class="container">
-  <div class="item" data-id="1">
-    <div class="item-title">经典拿铁</div>
-    <div class="item-desc">顺滑香浓，冷热皆宜</div>
-    <div class="item-specs">
-      <label><input type="radio" name="spec-1" value="大杯" checked>大杯 $7</label>
-      <label><input type="radio" name="spec-1" value="中杯">中杯 $6</label>
-      <label><input type="radio" name="spec-1" value="小杯">小杯 $5</label>
-    </div>
-    <button onclick="addToCart(1)">加入购物车</button>
-  </div>
-  <div class="item" data-id="2">
-    <div class="item-title">黑巧摩卡</div>
-    <div class="item-desc">巧克力控必喝，香醇升级</div>
-    <div class="item-specs">
-      <label><input type="radio" name="spec-2" value="大杯" checked>大杯 $8</label>
-      <label><input type="radio" name="spec-2" value="中杯">中杯 $7</label>
-      <label><input type="radio" name="spec-2" value="小杯">小杯 $6</label>
-    </div>
-    <button onclick="addToCart(2)">加入购物车</button>
-  </div>
-  <div class="item" data-id="3">
-    <div class="item-title">燕麦奶茶</div>
-    <div class="item-desc">健康低卡，无乳糖</div>
-    <div class="item-specs">
-      <label><input type="radio" name="spec-3" value="大杯" checked>大杯 $6</label>
-      <label><input type="radio" name="spec-3" value="中杯">中杯 $5</label>
-      <label><input type="radio" name="spec-3" value="小杯">小杯 $4</label>
-    </div>
-    <button onclick="addToCart(3)">加入购物车</button>
-  </div>
-</div>
-<div id="cartBar" class="cart-bar" style="display:none">
-  <span id="cartTotal">已选 0 件 | 总价 $0</span>
-  <button onclick="submitOrder()">提交订单</button>
-</div>
-<script>
-  let cart = [];
-  const itemData = {
-    1: {name: '经典拿铁', prices: {大杯: 7, 中杯: 6, 小杯: 5}},
-    2: {name: '黑巧摩卡', prices: {大杯: 8, 中杯: 7, 小杯: 6}},
-    3: {name: '燕麦奶茶', prices: {大杯: 6, 中杯: 5, 小杯: 4}}
-  };
-  function addToCart(id) {
-    const spec = document.querySelector(`input[name="spec-${id}"]:checked`).value;
-    const price = itemData[id].prices[spec];
-    cart.push({id, name: itemData[id].name, spec, price});
-    updateCartBar();
-  }
-  function updateCartBar() {
-    if (cart.length === 0) {
-      document.getElementById('cartBar').style.display = 'none';
-    } else {
-      document.getElementById('cartBar').style.display = '';
-      let total = cart.reduce((s, c) => s + c.price, 0);
-      document.getElementById('cartTotal').innerText = `已选 ${cart.length} 件 | 总价 $${total}`;
+  <h2>下单表单</h2>
+  <form id="orderForm">
+    姓名：<input name="name" required><br>
+    电话：<input name="phone" required><br>
+    商品：
+    <select name="item">
+      <option value="经典拿铁">经典拿铁</option>
+      <option value="黑巧摩卡">黑巧摩卡</option>
+      <option value="燕麦奶茶">燕麦奶茶</option>
+    </select><br>
+    规格：
+    <select name="spec">
+      <option value="大杯">大杯</option>
+      <option value="中杯">中杯</option>
+      <option value="小杯">小杯</option>
+    </select><br>
+    数量：<input name="qty" type="number" value="1" min="1"><br>
+    备注：<input name="note"><br>
+    <button type="submit">提交订单</button>
+  </form>
+  <div id="result"></div>
+  <script>
+    document.getElementById('orderForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(this));
+      const resp = await fetch("https://你的后端域名/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      if (resp.ok) {
+        document.getElementById("result").innerText = "下单成功！";
+        this.reset();
+      } else {
+        document.getElementById("result").innerText = "提交失败！";
+      }
     }
-  }
-  function submitOrder() {
-    if (cart.length === 0) return;
-    if (window.Telegram && Telegram.WebApp) {
-        alert("准备调用 sendData");
-        Telegram.WebApp.sendData(JSON.stringify(cart));
-        alert("sendData 已调用");
-        Telegram.WebApp.close();
-    } else {
-        alert("请在 Telegram 客户端内打开 Mini App 使用下单功能！");
-    }
-}
-
-
-</script>
+  </script>
 </body>
 </html>
