@@ -1,165 +1,68 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>Batman1788 下单表单</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft Yahei', Arial, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 400px;
-            margin: 32px auto;
-            padding: 24px 20px 16px 20px;
-            background: #fff;
-            border-radius: 18px;
-            box-shadow: 0 6px 32px rgba(40,50,90,0.08);
-        }
-        h2 {
-            text-align: center;
-            color: #222;
-            margin-top: 0;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-        .user-info {
-            background: #e9f4fb;
-            color: #2563eb;
-            font-size: 1.07em;
-            border-radius: 12px;
-            padding: 10px 14px;
-            margin-bottom: 18px;
-            display: flex; align-items: center; gap:8px;
-            justify-content: center;
-            min-height: 32px;
-        }
-        .user-info b { color: #128cff; }
-        .form-group {
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-        label { font-size: 1em; color: #444; }
-        input, select {
-            font-size: 1em;
-            border: 1px solid #cdd6e2;
-            border-radius: 8px;
-            padding: 8px 10px;
-            outline: none;
-            background: #f9fafb;
-            transition: border 0.18s;
-        }
-        input:focus, select:focus {
-            border: 1.5px solid #48a5f5;
-            background: #fff;
-        }
-        button {
-            width: 100%;
-            background: linear-gradient(90deg, #1877ee 60%, #50c4fa 100%);
-            color: #fff; font-size: 1.13em; font-weight: 600;
-            border: none; border-radius: 22px;
-            box-shadow: 0 2px 10px rgba(30,130,200,0.13);
-            padding: 13px 0;
-            margin-top: 8px;
-            cursor: pointer;
-            letter-spacing: 2px;
-            transition: background 0.18s, transform 0.13s;
-        }
-        button:active {
-            background: linear-gradient(90deg, #2284fc 60%, #29ace5 100%);
-            transform: scale(0.98);
-        }
-        @media (max-width: 480px) {
-            .container { max-width: 97vw; padding: 12vw 4vw 7vw 4vw; }
-            h2 { font-size: 1.35em; }
-        }
-    </style>
-    <script>
-        window.onload = function () {
-            if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
-                const user = Telegram.WebApp.initDataUnsafe.user;
-                document.getElementById('telegram-info').innerHTML =
-                    `已登录：<b>${user.first_name || ''}${user.last_name ? ' ' + user.last_name : ''}</b> <span style="color:#7a8">(ID: ${user.id})</span>`;
-                document.getElementById('orderForm').style.display = 'flex';
-                window.telegramUser = user;
-            } else {
-                document.getElementById('telegram-info').innerHTML =
-                    `<span style="color:#f55">请在 Telegram 内部打开本页面</span>`;
-                document.getElementById('orderForm').style.display = 'none';
-            }
-        }
-        async function submitOrder(e) {
-            e.preventDefault();
-            const user = window.telegramUser;
-            if (!user) {
-                alert("请在 Telegram 内部打开本页面");
-                return;
-            }
-            const formData = Object.fromEntries(new FormData(e.target));
-            formData.telegram_id = user.id;
-            formData.telegram_name = user.username || '';
-            formData.first_name = user.first_name || '';
-            formData.last_name = user.last_name || '';
-            // POST 到你的 Flask 地址
-            const resp = await fetch("https://batmanshop.onrender.com/order", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
-            });
-            if (resp.ok) {
-                Telegram.WebApp.showAlert("下单成功！", () => {});
-                e.target.reset();
-            } else {
-                Telegram.WebApp.showAlert("提交失败，请稍后重试");
-            }
-        }
-    </script>
+  <meta charset="UTF-8">
+  <title>Batman1788 点单菜单</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI', Arial; background: #f6f8fa; margin: 0; }
+    .menu-container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 14px; box-shadow: 0 1px 8px #ddd; padding: 24px; }
+    .menu-card { display: flex; gap: 18px; margin-bottom: 26px; background: #fafbfc; border-radius: 12px; box-shadow: 0 2px 8px #eee; padding: 18px;}
+    .menu-card img { width: 100px; height: 100px; border-radius: 12px; object-fit: cover; }
+    .menu-info { flex: 1; }
+    .menu-name { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
+    .menu-tags { margin-bottom: 8px; }
+    .tag { display: inline-block; background: #ffdf8d; color: #e29e07; border-radius: 8px; font-size: 12px; padding: 2px 8px; margin-right: 6px; }
+    .tag.hot { background: #ff647c; color: #fff; }
+    .tag.new { background: #51d67b; color: #fff; }
+    .price-row { margin-bottom: 6px; font-size: 15px; }
+    .menu-note { color: #888; font-size: 13px; }
+    .menu-form { margin-top: 24px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Batman1788 下单表单</h2>
-        <div id="telegram-info" class="user-info">正在检测 Telegram 登录...</div>
-        <form id="orderForm" style="display:none;flex-direction:column;gap:0.5em;" onsubmit="submitOrder(event)">
-            <div class="form-group">
-                <label>姓名</label>
-                <input name="name" required placeholder="请输入您的姓名">
+  <div class="menu-container" id="menuList">菜单加载中...</div>
+  <script>
+    // ====== 你的 Apps Script 输出的菜单 JSON 链接 ======
+    const SHEET_API = 'https://script.google.com/macros/s/AKfycbwaNGa3oeMym9_3nli1f_pkBmnJXQocYhIxfRCI_p2bdu48OTTIkASuX7GxVcaz-Pog/exec';
+
+    fetch(SHEET_API)
+      .then(res => res.json())
+      .then(menu => {
+        let html = '';
+        menu.forEach(item => {
+          // tags高亮支持 hot/new，多个tag以空格分隔
+          let tagsHtml = '';
+          if (item['标签(tag)']) {
+            item['标签(tag)'].split(' ').forEach(tag => {
+              let c = '';
+              if (tag.toLowerCase() === 'hot') c = 'tag hot';
+              else if (tag.toLowerCase() === 'new') c = 'tag new';
+              else c = 'tag';
+              tagsHtml += `<span class="${c}">${tag}</span>`;
+            });
+          }
+          // 多规格价格
+          let priceHtml = '';
+          if (item.Q) priceHtml += `<div class="price-row">Q: <b>￥${item.Q}</b></div>`;
+          if (item.H) priceHtml += `<div class="price-row">H: <b>￥${item.H}</b></div>`;
+          if (item.OZ) priceHtml += `<div class="price-row">OZ: <b>￥${item.OZ}</b></div>`;
+          // 上架判断
+          if (item['是否上架'] && item['是否上架'].toString().trim().toLowerCase() === 'no') return;
+          html += `
+            <div class="menu-card">
+              <img src="${item.图片_URL || ''}" alt="img" onerror="this.style.display='none'">
+              <div class="menu-info">
+                <div class="menu-name">${item.名称}</div>
+                <div class="menu-tags">${tagsHtml}</div>
+                ${priceHtml}
+                <div class="menu-note">${item.备注 || ''}</div>
+              </div>
             </div>
-            <div class="form-group">
-                <label>电话</label>
-                <input name="phone" required placeholder="手机号/微信号">
-            </div>
-            <div class="form-group">
-                <label>商品</label>
-                <select name="item">
-                    <option value="经典拿铁">经典拿铁</option>
-                    <option value="黑巧摩卡">黑巧摩卡</option>
-                    <option value="燕麦奶茶">燕麦奶茶</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>规格</label>
-                <select name="spec">
-                    <option value="大杯">大杯</option>
-                    <option value="中杯">中杯</option>
-                    <option value="小杯">小杯</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>数量</label>
-                <input name="qty" type="number" value="1" min="1" required>
-            </div>
-            <div class="form-group">
-                <label>备注</label>
-                <input name="note" placeholder="可填写特殊要求">
-            </div>
-            <button type="submit">提交订单</button>
-        </form>
-    </div>
+          `;
+        });
+        document.getElementById('menuList').innerHTML = html || "暂无上架商品";
+      });
+  </script>
 </body>
 </html>
