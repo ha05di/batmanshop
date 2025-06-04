@@ -1,47 +1,365 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <title>Batman1788 下单</title>
-</head>
-<body>
-  <h2>下单表单</h2>
-  <form id="orderForm">
-    姓名：<input name="name" required><br>
-    电话：<input name="phone" required><br>
-    商品：
-    <select name="item">
-      <option value="经典拿铁">经典拿铁</option>
-      <option value="黑巧摩卡">黑巧摩卡</option>
-      <option value="燕麦奶茶">燕麦奶茶</option>
-    </select><br>
-    规格：
-    <select name="spec">
-      <option value="大杯">大杯</option>
-      <option value="中杯">中杯</option>
-      <option value="小杯">小杯</option>
-    </select><br>
-    数量：<input name="qty" type="number" value="1" min="1"><br>
-    备注：<input name="note"><br>
-    <button type="submit">提交订单</button>
-  </form>
-  <div id="result"></div>
-  <script>
-    document.getElementById('orderForm').onsubmit = async function(e) {
-      e.preventDefault();
-      const data = Object.fromEntries(new FormData(this));
-      const resp = await fetch("https://你的后端域名/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      if (resp.ok) {
-        document.getElementById("result").innerText = "下单成功！";
-        this.reset();
-      } else {
-        document.getElementById("result").innerText = "提交失败！";
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Batman1788 Menu</title>
+  <style>
+    /* ========== 全局重置与基础样式 ========== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: "微软雅黑", Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      line-height: 1.5;
+      padding: 10px; /* 手机端略微留白 */
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      margin-bottom: 16px;
+      color: #111;
+    }
+
+    /* ========== 菜单列表容器 ========== */
+    .menu-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;          /* 卡片之间的间距 */
+      justify-content: center;
+      max-width: 1000px;  /* 最大宽度，超出时居中 */
+      margin: 0 auto;
+    }
+
+    /* ========== 菜单项（卡片）基础样式 ========== */
+    .menu-item {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column; /* 默认竖向排列（移动端友好） */
+      width: 100%;            /* 手机时卡片占满宽度 */
+      max-width: 480px;       /* 大屏时卡片最大宽度 */
+      overflow: hidden;
+      position: relative;     /* 使徽章可以绝对定位在此容器内 */
+    }
+    /* 图片：移动端全宽；大屏时再改为固定大小 */
+    .menu-item img {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+    }
+    /* 文字容器 */
+    .menu-item .info {
+      padding: 10px 12px;
+    }
+    .menu-item .title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #222;
+      line-height: 1.3;
+    }
+    .menu-item .desc {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 8px;
+      /* 控制描述行数，避免过长 */
+      max-height: 4.2em; /* 大约 3 行 */
+      overflow: hidden;
+    }
+
+    /* ========== 徽章（Badge）公共样式 ========== */
+    .badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;           /* 可改为 right: 8px; 放在右上角 */
+      padding: 6px 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      color: #fff;
+      border-radius: 4px;
+      text-transform: uppercase;
+      z-index: 10;
+    }
+    .badge.new {
+      background-color: #28a745; /* 绿色 */
+    }
+    .badge.hot {
+      background-color: #dc3545; /* 红色 */
+    }
+
+    /* ========== 三栏价位（默认移动端） ========== */
+    .price {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .price .tier {
+      flex: 1;
+      background-color: #ffecec;
+      border: 1px solid #e6a1a1;
+      border-radius: 4px;
+      text-align: center;
+      padding: 6px 4px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .price .tier .tier-label {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #d84343;
+      margin-bottom: 2px;
+    }
+    .price .tier .tier-value {
+      font-size: 1rem;
+      color: #e74c3c;
+      font-weight: 600;
+    }
+
+    /* ========== 宽屏（平板/桌面）样式调整 ========== */
+    @media screen and (min-width: 600px) {
+      .menu-item {
+        flex-direction: row;     /* 左图右文 */
+        width: calc(50% - 12px); /* 两列并排，减去 gap */
+      }
+      .menu-item img {
+        width: 140px;
+        height: 140px;
+        flex-shrink: 0; /* 保持固定大小，不被压缩 */
+      }
+      .menu-item .info {
+        padding: 12px 14px;
+      }
+      .menu-item .title {
+        font-size: 1.15rem;
+      }
+      .menu-item .desc {
+        font-size: 0.88rem;
+      }
+      .price {
+        gap: 8px;          /* 大屏时块间距更大 */
+        margin-top: 10px;  /* 大屏卡片顶部间距略增 */
+      }
+      .price .tier {
+        padding: 8px 6px;
+      }
+      .price .tier .tier-label {
+        font-size: 1rem;
+      }
+      .price .tier .tier-value {
+        font-size: 1.05rem;
       }
     }
-  </script>
+
+    /* ========== 超宽屏（三列布局） ========== */
+    @media screen and (min-width: 1000px) {
+      .menu-item {
+        width: calc(33.333% - 12px); /* 三列并排 */
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Batman1788 Menu</h1>
+  <div class="menu-list">
+    <!-- 菜单项 1：标记为 “New” -->
+    <div class="menu-item">
+      <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/Mafia%20Funeral.jpg"
+           alt="Mafia Funeral" />
+      <div class="info">
+        <div class="title">Mafia Funeral (Indica) THC 25%</div>
+        <div class="desc">
+          Mafia Funeral is a hybrid weed strain made from a genetic cross between Falcon 9 and Menthol. This strain from Compound Genetics is a potent and flavorful bud that will send you to a blissful state of relaxation and euphoria. Mafia Funeral has dark green buds with purple hues and orange hairs, covered in frosty trichomes. Mafia Funeral is 20–25% THC, making this strain an ideal choice for experienced cannabis consumers.
+        </div>
+        <div class="price">
+          <div class="tier">
+            <div class="tier-label">Q</div>
+            <div class="tier-value">$140</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">H</div>
+            <div class="tier-value">$270</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">OZ</div>
+            <div class="tier-value">$400</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 菜单项 2：标记为 “Hot” -->
+    <div class="menu-item">
+      <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/orange.jpg"
+           alt="Orange Durban" />
+      <div class="info">
+        <div class="title">Orange Durban (Sativa) THC 22%</div>
+        <div class="desc">
+          Orange Durban is a citrus-heavy version of the African landrace strain Durban Poison. Parent strains Orange Juice Bud and Durban Poison come together to offer consumers notes of sweet orange intermixed with pine and earthy undertones. This strain’s bright, fruity flavors are underpinned by a stimulating physical energy that encourages activity.
+        </div>
+        <div class="price">
+          <div class="tier">
+            <div class="tier-label">Q</div>
+            <div class="tier-value">$130</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">H</div>
+            <div class="tier-value">$240</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">OZ</div>
+            <div class="tier-value">$380</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 菜单项 3：无徽章 -->
+    <div class="menu-item">
+      <div class="badge hot">Hot</div>
+      <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/lemon%20bean%20(2).jpg"
+           alt="Lemon Bean" />
+      <div class="info">
+        <div class="title">Lemon Bean (Sativa) THC 21%</div>
+        <div class="desc">
+          Lemon Bean is a sativa weed strain made from a genetic cross between Lemon Tree and Eddy Lepp. Lemon Bean is 21% THC, making this strain an ideal choice for experienced cannabis consumers. Lemon Bean effects include feeling energetic, focused, and uplifted.
+        </div>
+        <div class="price">
+          <div class="tier">
+            <div class="tier-label">Q</div>
+            <div class="tier-value">$120</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">H</div>
+            <div class="tier-value">$220</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">OZ</div>
+            <div class="tier-value">$360</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 菜单项 4：标记为 “New” -->
+    <div class="menu-item">
+      <div class="badge new">New</div>
+      <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/Triple%20Burger.jpg"
+           alt="Triple Burger" />
+      <div class="info">
+        <div class="title">Triple Burger (Indica) THC 25%</div>
+        <div class="desc">
+          Triple Burger is a mostly indica weed strain made from a genetic cross between GMO and Double Burger. This strain is a creation of Skunk House Genetics, a breeder known for producing potent and gassy strains. Triple Burger has a pungent aroma of garlic, butter, and diesel that will fill the room.
+        </div>
+        <div class="price">
+          <div class="tier">
+            <div class="tier-label">Q</div>
+            <div class="tier-value">$120</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">H</div>
+            <div class="tier-value">$220</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">OZ</div>
+            <div class="tier-value">$360</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 菜单项 5：标记为 “Hot” -->
+    <div class="menu-item">
+      <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/carts.jpg"
+           alt="THC Cartridge & Pen" />
+      <div class="info">
+        <div class="title">1ml THC Cartridge & Pen (Ready to Go) 85%</div>
+        <div class="desc">
+          1ml THC 85%，Plug and play, convenient and fast.
+        </div>
+        <div class="price">
+          <div class="tier">
+            <div class="tier-label">1 Set</div>
+            <div class="tier-value">$280</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">Cart</div>
+            <div class="tier-value">$230</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">Pen</div>
+            <div class="tier-value">$50</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 菜单项 6：无徽章 -->
+    <div class="menu-item">
+      <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/joints.jpg"
+           alt="Joints Ready To Go" />
+      <div class="info">
+        <div class="title">Joints (Ready To Go)</div>
+        <div class="desc">
+          1g Pre-rolled and ready to enjoy.
+        </div>
+        <div class="price">
+          <div class="tier">
+            <div class="tier-label">1 for</div>
+            <div class="tier-value">$40</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">3 for</div>
+            <div class="tier-value">$100</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">5 for</div>
+            <div class="tier-value">$150</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">8 for</div>
+            <div class="tier-value">$220</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 菜单项 7：无徽章 -->
+    <div class="menu-item">
+      <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/wonka.jpg"
+           alt="Wonka Gummies" />
+      <div class="info">
+        <div class="title">Edibles Wonka Gummies (600mg per pack)</div>
+        <div class="desc">
+          Wonka proudly presents Sharks 600mg THC, an edible that's sure to make a splash. Crafted with precision and expertise, these gummy sharks are designed to provide the ultimate THC-infused experience, right to your doorstep.
+        </div>
+        <div class="price">
+          <div class="tier">
+            <div class="tier-label">1 Pack</div>
+            <div class="tier-value">$150</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">2 Packs</div>
+            <div class="tier-value">$280</div>
+          </div>
+          <div class="tier">
+            <div class="tier-label">—</div>
+            <div class="tier-value">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 如果还有更多商品，每个商品直接复制 .menu-item 模块，
+         在需要高亮的卡片里加 <div class="badge new">New</div> 或 <div class="badge hot">Hot</div> -->
+  </div>
 </body>
 </html>
