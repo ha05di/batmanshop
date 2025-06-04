@@ -2,15 +2,101 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Batman1788 下单表单</title>
+    <title>Batman1788 下单</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-widget.js?7"
+            data-telegram-login="batmangiveawaybot"  <!-- 换成你的Bot用户名 -->
+            data-size="large"
+            data-userpic="true"
+            data-request-access="write"
+            data-onauth="onTelegramAuth(user)"
+            async>
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Helvetica Neue', Arial, 'Microsoft Yahei', sans-serif;
+            background: #f3f5f8;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            background: #fff;
+            max-width: 390px;
+            margin: 40px auto;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.07), 0 1.5px 4px rgba(0,0,0,0.05);
+            padding: 32px 26px 24px 26px;
+        }
+        h2 {
+            color: #1b2027;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1.35em;
+            letter-spacing: 2px;
+        }
+        #telegram-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2984ea;
+            font-size: 1em;
+            font-weight: 500;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        label {
+            font-size: 1em;
+            color: #222;
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+        input, select {
+            border: 1.2px solid #d6d8df;
+            border-radius: 7px;
+            padding: 9px 13px;
+            font-size: 1em;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus {
+            border-color: #51a2ff;
+            outline: none;
+        }
+        button[type="submit"] {
+            background: linear-gradient(90deg, #468cf1 20%, #2dcac7 100%);
+            border: none;
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 11px 0;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(40,160,255,0.09);
+            transition: background 0.15s;
+            cursor: pointer;
+            letter-spacing: 2px;
+        }
+        button[type="submit"]:hover {
+            background: linear-gradient(90deg, #2478ea 0%, #17b3a5 100%);
+        }
+        @media (max-width: 500px) {
+            .container {
+                padding: 20px 6vw 18px 6vw;
+                margin: 12px 0;
+                border-radius: 0;
+            }
+        }
+    </style>
     <script>
         let telegramUser = null;
         function onTelegramAuth(user) {
             telegramUser = user;
             document.getElementById('telegram-info').innerHTML =
-                `已登录：<b>${user.first_name || ''} ${user.last_name || ''}</b> (ID: ${user.id})`;
-            document.getElementById('orderForm').style.display = '';
+                `已登录：<b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#666">(ID: ${user.id})</span>`;
+            document.getElementById('orderForm').style.display = 'flex';
         }
+        // 提交订单
         async function submitOrder(e) {
             e.preventDefault();
             if (!telegramUser) {
@@ -23,49 +109,46 @@
             formData.first_name = telegramUser.first_name || '';
             formData.last_name = telegramUser.last_name || '';
             formData.photo_url = telegramUser.photo_url || '';
-            // 实际部署请把URL换成你render地址
+            // POST 到你 Render 的 Flask 地址
             const resp = await fetch("https://batmanshop.onrender.com/order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
             });
             if (resp.ok) {
-                alert("下单成功！");
+                alert("下单成功！感谢您的订购。");
                 e.target.reset();
             } else {
-                alert("提交失败！");
+                alert("提交失败，请稍后再试。");
             }
         }
     </script>
 </head>
 <body>
-    <h2>Batman1788 下单表单</h2>
-    <div id="telegram-info">请先用 Telegram 登录</div>
-    <script async src="https://telegram.org/js/telegram-widget.js?7"
-        data-telegram-login="batmangiveawaybot"
-        data-size="large"
-        data-userpic="false"
-        data-request-access="write"
-        data-onauth="onTelegramAuth(user)">
-    </script>
-    <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
-        姓名：<input name="name" required><br>
-        电话：<input name="phone" required><br>
-        商品：
-        <select name="item">
-            <option value="经典拿铁">经典拿铁</option>
-            <option value="黑巧摩卡">黑巧摩卡</option>
-            <option value="燕麦奶茶">燕麦奶茶</option>
-        </select><br>
-        规格：
-        <select name="spec">
-            <option value="大杯">大杯</option>
-            <option value="中杯">中杯</option>
-            <option value="小杯">小杯</option>
-        </select><br>
-        数量：<input name="qty" type="number" value="1" min="1"><br>
-        备注：<input name="note"><br>
-        <button type="submit">提交订单</button>
-    </form>
+    <div class="container">
+        <h2>Batman1788 下单表单</h2>
+        <div id="telegram-info">请先用 Telegram 登录</div>
+        <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
+            <label>姓名：<input name="name" required placeholder="请输入您的姓名"></label>
+            <label>电话：<input name="phone" required placeholder="手机号"></label>
+            <label>商品：
+                <select name="item">
+                    <option value="经典拿铁">经典拿铁</option>
+                    <option value="黑巧摩卡">黑巧摩卡</option>
+                    <option value="燕麦奶茶">燕麦奶茶</option>
+                </select>
+            </label>
+            <label>规格：
+                <select name="spec">
+                    <option value="大杯">大杯</option>
+                    <option value="中杯">中杯</option>
+                    <option value="小杯">小杯</option>
+                </select>
+            </label>
+            <label>数量：<input name="qty" type="number" value="1" min="1"></label>
+            <label>备注：<input name="note" placeholder="可选"></label>
+            <button type="submit">提交订单</button>
+        </form>
+    </div>
 </body>
 </html>
