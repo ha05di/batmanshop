@@ -30,7 +30,7 @@
     document.getElementById('orderForm').onsubmit = async function(e) {
       e.preventDefault();
       const data = Object.fromEntries(new FormData(this));
-      const resp = await fetch("https://你的后端域名/order", {
+      const resp = await fetch("https://batmanshop.onrender.com", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
