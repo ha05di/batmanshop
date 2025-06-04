@@ -3,67 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Batman1788 下单</title>
-    <script src="https://telegram.org/js/telegram-widget.js?7"
-            data-telegram-login="batmangiveawaybot"
-            data-size="large"
-            data-userpic="false"
-            data-request-access="write"
-            data-onauth="onTelegramAuth(user)"
-            async>
-    </script>
     <script>
-        let telegramUser = null;
         function onTelegramAuth(user) {
-            telegramUser = user;
             document.getElementById('telegram-info').innerHTML =
                 `已登录：<b>${user.first_name || ''} ${user.last_name || ''}</b> (ID: ${user.id})`;
-            document.getElementById('orderForm').style.display = 'block';
-        }
-        async function submitOrder(e) {
-            e.preventDefault();
-            if (!telegramUser) {
-                alert("请先用 Telegram 登录");
-                return;
-            }
-            const formData = Object.fromEntries(new FormData(e.target));
-            formData.telegram_id = telegramUser.id;
-            formData.telegram_name = telegramUser.username || '';
-            formData.first_name = telegramUser.first_name || '';
-            formData.last_name = telegramUser.last_name || '';
-            formData.photo_url = telegramUser.photo_url || '';
-            const resp = await fetch("https://batmanshop.onrender.com/order", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
-            });
-            if (resp.ok) {
-                alert("下单成功！");
-                e.target.reset();
-            } else {
-                alert("提交失败！");
-            }
         }
     </script>
 </head>
 <body>
     <h2>Batman1788 下单表单</h2>
     <div id="telegram-info">请先用 Telegram 登录</div>
-    <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
-        姓名：<input name="name" required><br>
-        电话：<input name="phone" required><br>
-        商品：<select name="item">
-            <option value="经典拿铁">经典拿铁</option>
-            <option value="黑巧摩卡">黑巧摩卡</option>
-            <option value="燕麦奶茶">燕麦奶茶</option>
-        </select><br>
-        规格：<select name="spec">
-            <option value="大杯">大杯</option>
-            <option value="中杯">中杯</option>
-            <option value="小杯">小杯</option>
-        </select><br>
-        数量：<input name="qty" type="number" value="1" min="1"><br>
-        备注：<input name="note"><br>
-        <button type="submit">提交订单</button>
-    </form>
+    <script async src="https://telegram.org/js/telegram-widget.js?7"
+        data-telegram-login="batmangiveawaybot"
+        data-size="large"
+        data-userpic="false"
+        data-request-access="write"
+        data-onauth="onTelegramAuth(user)">
+    </script>
 </body>
 </html>
