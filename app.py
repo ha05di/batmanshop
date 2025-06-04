@@ -2,9 +2,9 @@ from flask import Flask, request
 import requests
 
 # 你的 Telegram Bot Token
-BOT_TOKEN = 'YOUR_BOT_TOKEN'
+BOT_TOKEN = '7582978452:AAE1Zdz62epr589ezQSnZS9TdraznuW2Rgw'
 # 你要推送的 chat_id（可以是你/管理员/群组）
-CHAT_ID = 'YOUR_ADMIN_CHAT_ID'
+CHAT_ID = '6837915435'
 
 app = Flask(__name__)
 
