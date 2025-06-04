@@ -6,23 +6,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
     body { font-family: 'PingFang SC',Arial,sans-serif; margin:0; background:#f3f6fa;}
-    .container { max-width:480px; margin:30px auto; background:#fff; border-radius:18px; box-shadow:0 6px 24px #0001; padding:28px 16px; }
+    .container { max-width:500px; margin:30px auto; background:#fff; border-radius:16px; box-shadow:0 6px 24px #0001; padding:30px 12px; }
     h2 { text-align:center; margin:12px 0 24px 0; letter-spacing:2px;}
     #tg-login, #user-info {text-align:center;}
     .menu-item {display:flex;align-items:center;gap:14px;background:#f8fafb;border-radius:12px;margin-bottom:18px;padding:12px 10px;}
-    .menu-item img {width:64px;height:64px;border-radius:10px;object-fit:cover;background:#eee;}
+    .menu-item img {width:62px;height:62px;border-radius:9px;object-fit:cover;background:#eee;}
     .menu-detail{flex:1;}
-    .menu-title {font-size:1.08em;font-weight:600;}
+    .menu-title {font-size:1.07em;font-weight:600;}
     .menu-tags {font-size:.97em;color:#56aaff;margin-left:4px;}
     .menu-price {color:#f60;font-weight:bold;margin-right:8px;}
-    form label {font-size:1em;}
-    form input, form select, form textarea {
-      width:100%;font-size:1em;margin:5px 0 15px 0;padding:7px 10px;border-radius:6px;border:1px solid #ccc;
-    }
-    form button {
-      background:#0099ff;color:#fff;font-size:1.1em;padding:10px 0;border:none;border-radius:7px;width:100%;cursor:pointer;box-shadow:0 2px 8px #0099ff30;font-weight:bold;
-    }
-    .success { color:#24c974; text-align:center; font-size:1.2em;}
+    form input, form select, form textarea { width:100%;font-size:1em;margin:6px 0 13px 0;padding:7px 10px;border-radius:6px;border:1px solid #ccc;}
+    form button {background:#0099ff;color:#fff;font-size:1.1em;padding:10px 0;border:none;border-radius:7px;width:100%;cursor:pointer;box-shadow:0 2px 8px #0099ff30;font-weight:bold;}
+    .success { color:#24c974; text-align:center; font-size:1.14em;}
     .error { color:#f44; text-align:center;}
   </style>
 </head>
@@ -52,15 +47,15 @@
   </form>
 </div>
 <script>
-const SHEET_ID = '1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs'; // 你的Sheet
+const SHEET_ID = '1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs';
 const SHEET_TAB = 'menu';
-const API_URL = 'https://batmanshop.onrender.com/order'; // 你的后端地址
-const BOT_NAME = 'batmangiveawaybot'; // 你的Bot用户名
+const API_URL = 'https://batmanshop.onrender.com/order';
+const BOT_NAME = 'batmangiveawaybot';
 
 let menu = [];
 let user = null;
 
-// ----------- 1. 环境识别与登录 -----------
+// ----------- 登录检测（关键）-----------
 function showMenuAndForm() {
   document.getElementById('tg-login').style.display = "none";
   document.getElementById('user-info').style.display = "";
@@ -69,13 +64,7 @@ function showMenuAndForm() {
   document.getElementById('orderForm').style.display = "";
   renderMenu();
 }
-
-// Mini App 登录
-if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-  user = Telegram.WebApp.initDataUnsafe.user;
-  showMenuAndForm();
-} else {
-  // 浏览器环境插入 Telegram 登录按钮
+function showLoginBtn() {
   let div = document.getElementById('tg-login');
   div.innerHTML = '';
   let script = document.createElement('script');
@@ -89,14 +78,25 @@ if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Tele
   div.appendChild(script);
 }
 
+// ----------- 自动检测环境 -----------
+function checkUserEnv() {
+  // 1. Mini App 环境
+  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+    user = Telegram.WebApp.initDataUnsafe.user;
+    showMenuAndForm();
+  } else {
+    // 2. 浏览器环境
+    showLoginBtn();
+  }
+}
 window.onTelegramAuth = function(u) {
   user = u;
   showMenuAndForm();
 }
+checkUserEnv();
 
-// ----------- 2. Google Sheet 拉取菜单 -----------
+// ----------- 菜单拉取 -----------
 async function fetchMenu() {
-  // 这里直接用 Sheets v4 API，无需API Key（公开表单可读）
   let url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_TAB}?alt=json`;
   try {
     let r = await fetch(url);
@@ -115,12 +115,9 @@ async function fetchMenu() {
     document.getElementById('menu-list').innerHTML = '<div class="error">菜单读取失败！</div>';
   }
 }
-
-// ----------- 3. 菜单渲染和选择 -----------
 function renderMenu() {
   let list = document.getElementById('menu-list');
   if (!menu.length) { fetchMenu(); return; }
-  // 下拉框
   let select = document.getElementById('itemSelect');
   select.innerHTML = "";
   menu.forEach(item=>{
@@ -130,7 +127,7 @@ function renderMenu() {
     opt.textContent = text;
     select.appendChild(opt);
   });
-  // 图文菜单
+  // 菜单图片展示
   list.innerHTML = menu.map(item=>`
     <div class="menu-item">
       <img src="${item['图片_URL']}" loading="lazy">
@@ -145,7 +142,7 @@ function renderMenu() {
   `).join("");
 }
 
-// ----------- 4. 下单逻辑 -----------
+// ----------- 下单 -----------
 async function submitOrder(e) {
   e.preventDefault();
   if (!user) return alert("请先用 Telegram 登录");
