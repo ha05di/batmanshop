@@ -5,15 +5,70 @@
     <title>Batman1788 下单表单</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
-        /* 用上面那套样式就行，可直接复制你上面的 .container 等css */
-        /* ...省略，和上面优化界面一致... */
-        body { background:#f3f5f8; font-family: 'Segoe UI', ...; }
-        /* ...其余和上面一致... */
+        body { background:#f3f5f8; font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; }
+        .container { max-width:400px; margin:40px auto; background:#fff; border-radius:16px; box-shadow:0 2px 10px #0001; padding:2em; }
+        h2 { text-align:center; }
+        label { display:block; margin:1em 0 .5em 0; color:#222; }
+        select, input { width:100%; margin-top:4px; padding:6px; border-radius:6px; border:1px solid #ccc; }
+        button { margin-top:2em; width:100%; background:#222; color:#fff; border:none; border-radius:8px; font-size:1.1em; padding:.8em 0; }
+        .item-desc { color:#666; font-size:.92em; }
     </style>
     <script>
+        // 菜单数据结构
+        let MENU = {};
+        // 拉取 CSV Sheet 构造菜单
+        function loadMenuFromSheet() {
+            const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs/export?format=csv";
+            Papa.parse(SHEET_CSV_URL, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    // 解析成： {商品名: {规格: {价格, hot, new, img_url}}}
+                    MENU = {};
+                    results.data.forEach(row => {
+                        if (!row['商品名'] || !row['规格']) return;
+                        if (!MENU[row['商品名']]) MENU[row['商品名']] = {};
+                        MENU[row['商品名']][row['规格']] = {
+                            price: row['价格'],
+                            badge: row['HOT/NEW'] || '',
+                            img: row['图片URL'] || ''
+                        };
+                    });
+                    buildMenuOptions();
+                }
+            });
+        }
+
+        function buildMenuOptions() {
+            // 商品下拉
+            const itemSel = document.getElementById('item-select');
+            itemSel.innerHTML = "";
+            Object.keys(MENU).forEach(itemName => {
+                itemSel.innerHTML += `<option value="${itemName}">${itemName}</option>`;
+            });
+            buildSpecOptions(); // 默认加载首个商品规格
+            itemSel.onchange = buildSpecOptions;
+        }
+
+        function buildSpecOptions() {
+            const itemSel = document.getElementById('item-select');
+            const specSel = document.getElementById('spec-select');
+            const selected = itemSel.value;
+            specSel.innerHTML = "";
+            if (!MENU[selected]) return;
+            Object.entries(MENU[selected]).forEach(([spec, meta]) => {
+                let badge = meta.badge ? ` <span style="color:#f55;font-weight:bold">${meta.badge.toUpperCase()}</span>` : "";
+                let price = meta.price ? `（￥${meta.price}）` : "";
+                specSel.innerHTML += `<option value="${spec}">${spec}${price}${badge}</option>`;
+            });
+        }
+
         window.onload = function () {
-            // Mini App 模式下获取用户
+            loadMenuFromSheet();
+
+            // Telegram登录检测
             if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
                 const user = Telegram.WebApp.initDataUnsafe.user;
                 document.getElementById('telegram-info').innerHTML =
@@ -21,12 +76,12 @@
                 document.getElementById('orderForm').style.display = 'flex';
                 window.telegramUser = user;
             } else {
-                // 不是在 Telegram 内部打开
                 document.getElementById('telegram-info').innerHTML =
                     `<span style="color:#f55">请在 Telegram 内部打开（点击菜单/按钮进入）</span>`;
                 document.getElementById('orderForm').style.display = 'none';
             }
         }
+
         async function submitOrder(e) {
             e.preventDefault();
             const user = window.telegramUser;
@@ -39,7 +94,10 @@
             formData.telegram_name = user.username || '';
             formData.first_name = user.first_name || '';
             formData.last_name = user.last_name || '';
-            // POST 到你 Render 的 Flask 地址
+            // 附带价格
+            formData.price = MENU[formData.item][formData.spec].price;
+            formData.badge = MENU[formData.item][formData.spec].badge;
+            // POST 到 Flask 服务器
             const resp = await fetch("https://batmanshop.onrender.com/order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -58,22 +116,14 @@
     <div class="container">
         <h2>Batman1788 下单表单</h2>
         <div id="telegram-info">正在检测 Telegram 登录...</div>
-        <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
+        <form id="orderForm" style="display:none; flex-direction:column" onsubmit="submitOrder(event)">
             <label>姓名：<input name="name" required placeholder="请输入您的姓名"></label>
             <label>电话：<input name="phone" required placeholder="手机号"></label>
             <label>商品：
-                <select name="item">
-                    <option value="经典拿铁">经典拿铁</option>
-                    <option value="黑巧摩卡">黑巧摩卡</option>
-                    <option value="燕麦奶茶">燕麦奶茶</option>
-                </select>
+                <select id="item-select" name="item"></select>
             </label>
             <label>规格：
-                <select name="spec">
-                    <option value="大杯">大杯</option>
-                    <option value="中杯">中杯</option>
-                    <option value="小杯">小杯</option>
-                </select>
+                <select id="spec-select" name="spec"></select>
             </label>
             <label>数量：<input name="qty" type="number" value="1" min="1"></label>
             <label>备注：<input name="note" placeholder="可选"></label>
