@@ -1,181 +1,84 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>Batman1788 下单表单</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <style>
-    body { font-family: 'PingFang SC',Arial,sans-serif; margin:0; background:#f3f6fa;}
-    .container { max-width:500px; margin:30px auto; background:#fff; border-radius:16px; box-shadow:0 6px 24px #0001; padding:30px 12px; }
-    h2 { text-align:center; margin:12px 0 24px 0; letter-spacing:2px;}
-    #tg-login, #user-info {text-align:center;}
-    .menu-item {display:flex;align-items:center;gap:14px;background:#f8fafb;border-radius:12px;margin-bottom:18px;padding:12px 10px;}
-    .menu-item img {width:62px;height:62px;border-radius:9px;object-fit:cover;background:#eee;}
-    .menu-detail{flex:1;}
-    .menu-title {font-size:1.07em;font-weight:600;}
-    .menu-tags {font-size:.97em;color:#56aaff;margin-left:4px;}
-    .menu-price {color:#f60;font-weight:bold;margin-right:8px;}
-    form input, form select, form textarea { width:100%;font-size:1em;margin:6px 0 13px 0;padding:7px 10px;border-radius:6px;border:1px solid #ccc;}
-    form button {background:#0099ff;color:#fff;font-size:1.1em;padding:10px 0;border:none;border-radius:7px;width:100%;cursor:pointer;box-shadow:0 2px 8px #0099ff30;font-weight:bold;}
-    .success { color:#24c974; text-align:center; font-size:1.14em;}
-    .error { color:#f44; text-align:center;}
-  </style>
+    <meta charset="UTF-8">
+    <title>Batman1788 下单表单</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* 用上面那套样式就行，可直接复制你上面的 .container 等css */
+        /* ...省略，和上面优化界面一致... */
+        body { background:#f3f5f8; font-family: 'Segoe UI', ...; }
+        /* ...其余和上面一致... */
+    </style>
+    <script>
+        window.onload = function () {
+            // Mini App 模式下获取用户
+            if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
+                const user = Telegram.WebApp.initDataUnsafe.user;
+                document.getElementById('telegram-info').innerHTML =
+                    `已登录：<b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#666">(ID: ${user.id})</span>`;
+                document.getElementById('orderForm').style.display = 'flex';
+                window.telegramUser = user;
+            } else {
+                // 不是在 Telegram 内部打开
+                document.getElementById('telegram-info').innerHTML =
+                    `<span style="color:#f55">请在 Telegram 内部打开（点击菜单/按钮进入）</span>`;
+                document.getElementById('orderForm').style.display = 'none';
+            }
+        }
+        async function submitOrder(e) {
+            e.preventDefault();
+            const user = window.telegramUser;
+            if (!user) {
+                alert("请在 Telegram 内部打开本页面");
+                return;
+            }
+            const formData = Object.fromEntries(new FormData(e.target));
+            formData.telegram_id = user.id;
+            formData.telegram_name = user.username || '';
+            formData.first_name = user.first_name || '';
+            formData.last_name = user.last_name || '';
+            // POST 到你 Render 的 Flask 地址
+            const resp = await fetch("https://batmanshop.onrender.com/order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
+            if (resp.ok) {
+                alert("下单成功！");
+                e.target.reset();
+            } else {
+                alert("提交失败，请稍后再试。");
+            }
+        }
+    </script>
 </head>
 <body>
-<div class="container">
-  <h2>Batman1788 下单表单</h2>
-  <div id="tg-login"></div>
-  <div id="user-info" style="display:none"></div>
-  <div id="menu-list"></div>
-  <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
-    <label>姓名 <input name="name" required placeholder="请填写真实姓名"></label>
-    <label>电话 <input name="phone" required placeholder="手机号"></label>
-    <label>商品
-      <select name="item" id="itemSelect"></select>
-    </label>
-    <label>规格
-      <select name="spec">
-        <option value="Q">Q（小）</option>
-        <option value="H">H（中）</option>
-        <option value="OZ">OZ（大）</option>
-      </select>
-    </label>
-    <label>数量 <input name="qty" type="number" value="1" min="1" required></label>
-    <label>备注 <textarea name="note" placeholder="可填写额外需求" rows="2"></textarea></label>
-    <button type="submit">提交订单</button>
-    <div id="orderStatus"></div>
-  </form>
-</div>
-<script>
-const SHEET_ID = '1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs';
-const SHEET_TAB = 'menu';
-const API_URL = 'https://batmanshop.onrender.com/order';
-const BOT_NAME = 'batmangiveawaybot';
-
-let menu = [];
-let user = null;
-
-// ----------- 登录检测（关键）-----------
-function showMenuAndForm() {
-  document.getElementById('tg-login').style.display = "none";
-  document.getElementById('user-info').style.display = "";
-  document.getElementById('user-info').innerHTML =
-    `已登录: <b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#888">@${user.username||''}</span>`;
-  document.getElementById('orderForm').style.display = "";
-  renderMenu();
-}
-function showLoginBtn() {
-  let div = document.getElementById('tg-login');
-  div.innerHTML = '';
-  let script = document.createElement('script');
-  script.src = "https://telegram.org/js/telegram-widget.js?7";
-  script.setAttribute('data-telegram-login', BOT_NAME);
-  script.setAttribute('data-size', 'large');
-  script.setAttribute('data-userpic', 'true');
-  script.setAttribute('data-request-access', 'write');
-  script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-  script.async = true;
-  div.appendChild(script);
-}
-
-// ----------- 自动检测环境 -----------
-function checkUserEnv() {
-  // 1. Mini App 环境
-  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-    user = Telegram.WebApp.initDataUnsafe.user;
-    showMenuAndForm();
-  } else {
-    // 2. 浏览器环境
-    showLoginBtn();
-  }
-}
-window.onTelegramAuth = function(u) {
-  user = u;
-  showMenuAndForm();
-}
-checkUserEnv();
-
-// ----------- 菜单拉取 -----------
-async function fetchMenu() {
-  let url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_TAB}?alt=json`;
-  try {
-    let r = await fetch(url);
-    let json = await r.json();
-    let rows = json.values;
-    let heads = rows[0];
-    menu = rows.slice(1)
-      .filter(row => (row[heads.indexOf('是否上架')] === "1" || row[heads.indexOf('是否上架')] === "是"))
-      .map(row => {
-        let obj = {};
-        heads.forEach((h,i)=>{ obj[h]=row[i]||""; });
-        return obj;
-      });
-    renderMenu();
-  } catch (e) {
-    document.getElementById('menu-list').innerHTML = '<div class="error">菜单读取失败！</div>';
-  }
-}
-function renderMenu() {
-  let list = document.getElementById('menu-list');
-  if (!menu.length) { fetchMenu(); return; }
-  let select = document.getElementById('itemSelect');
-  select.innerHTML = "";
-  menu.forEach(item=>{
-    let text = `${item.名称} ${item['标签(tag)']?('('+item['标签(tag)']+')'):""} (${item.Q}/${item.H}/${item.OZ})`;
-    let opt = document.createElement('option');
-    opt.value = item.名称;
-    opt.textContent = text;
-    select.appendChild(opt);
-  });
-  // 菜单图片展示
-  list.innerHTML = menu.map(item=>`
-    <div class="menu-item">
-      <img src="${item['图片_URL']}" loading="lazy">
-      <div class="menu-detail">
-        <div class="menu-title">${item.名称}
-          ${item['标签(tag)']?`<span class="menu-tags">${item['标签(tag)']}</span>`:""}
-        </div>
-        <div class="menu-price">Q: ${item.Q} / H: ${item.H} / OZ: ${item.OZ}</div>
-        <div style="color:#aaa;font-size:.92em;">${item.备注||""}</div>
-      </div>
+    <div class="container">
+        <h2>Batman1788 下单表单</h2>
+        <div id="telegram-info">正在检测 Telegram 登录...</div>
+        <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
+            <label>姓名：<input name="name" required placeholder="请输入您的姓名"></label>
+            <label>电话：<input name="phone" required placeholder="手机号"></label>
+            <label>商品：
+                <select name="item">
+                    <option value="经典拿铁">经典拿铁</option>
+                    <option value="黑巧摩卡">黑巧摩卡</option>
+                    <option value="燕麦奶茶">燕麦奶茶</option>
+                </select>
+            </label>
+            <label>规格：
+                <select name="spec">
+                    <option value="大杯">大杯</option>
+                    <option value="中杯">中杯</option>
+                    <option value="小杯">小杯</option>
+                </select>
+            </label>
+            <label>数量：<input name="qty" type="number" value="1" min="1"></label>
+            <label>备注：<input name="note" placeholder="可选"></label>
+            <button type="submit">提交订单</button>
+        </form>
     </div>
-  `).join("");
-}
-
-// ----------- 下单 -----------
-async function submitOrder(e) {
-  e.preventDefault();
-  if (!user) return alert("请先用 Telegram 登录");
-  let form = Object.fromEntries(new FormData(e.target));
-  form.telegram_id = user.id;
-  form.telegram_name = user.username || '';
-  form.first_name = user.first_name || '';
-  form.last_name = user.last_name || '';
-  form.photo_url = user.photo_url || '';
-  // 价格信息
-  let itemInfo = menu.find(x=>x.名称===form.item);
-  if (itemInfo) {
-    form.price = itemInfo[form.spec] || "";
-    form.menu_tag = itemInfo['标签(tag)'] || "";
-  }
-  let st = document.getElementById('orderStatus');
-  st.innerHTML = "提交中…";
-  try {
-    let r = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
-    });
-    if (r.ok) {
-      st.innerHTML = "<div class='success'>下单成功！</div>";
-      e.target.reset();
-    } else {
-      st.innerHTML = "<div class='error'>提交失败，请稍后再试！</div>";
-    }
-  } catch {
-    st.innerHTML = "<div class='error'>网络异常，请重试！</div>";
-  }
-}
-</script>
 </body>
 </html>
