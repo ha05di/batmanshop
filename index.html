@@ -5,28 +5,120 @@
     <title>Batman1788 下单表单</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
-        /* 用上面那套样式就行，可直接复制你上面的 .container 等css */
-        /* ...省略，和上面优化界面一致... */
-        body { background:#f3f5f8; font-family: 'Segoe UI', ...; }
-        /* ...其余和上面一致... */
+        body { background:#f3f5f8; font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; }
+        .container { max-width:420px; margin:40px auto; background:#fff; border-radius:16px; box-shadow:0 2px 10px #0001; padding:2em; }
+        h2 { text-align:center; }
+        label { display:block; margin:1em 0 .5em 0; color:#222; }
+        select, input { width:100%; margin-top:4px; padding:6px; border-radius:6px; border:1px solid #ccc; }
+        button { margin-top:2em; width:100%; background:#222; color:#fff; border:none; border-radius:8px; font-size:1.1em; padding:.8em 0; }
+        .item-img { width:64px; height:64px; object-fit:cover; border-radius:10px; border:1px solid #eee; margin-right:12px; }
+        .spec-row { display:flex; align-items:center; gap:10px; }
+        .item-desc { color:#888; font-size:.92em; margin-bottom:.3em; }
+        .badge { display:inline-block; background:#ffd700; color:#444; font-size:.8em; border-radius:7px; padding:1px 7px; margin-left:8px; }
     </style>
     <script>
+        let MENU = [];
+        let SPEC_NAMES = ["Q", "H", "OZ"]; // Sheet规格列名（根据你的sheet定制）
+
+        function loadMenuFromSheet() {
+            const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs/export?format=csv&gid=0";
+            Papa.parse(SHEET_CSV_URL, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    // 过滤掉无“名称”的行
+                    MENU = results.data.filter(row => row['名称'] && row['是否上架'] !== 'N');
+                    buildMenuList();
+                }
+            });
+        }
+
+        function buildMenuList() {
+            const menuList = document.getElementById('menu-list');
+            menuList.innerHTML = "";
+
+            MENU.forEach((item, idx) => {
+                // 每种规格自动识别
+                let specs = [];
+                SPEC_NAMES.forEach(spec => {
+                    if (item[spec] && item[spec].trim()) {
+                        specs.push({ spec, price: item[spec].trim() });
+                    }
+                });
+                // 主体渲染
+                menuList.innerHTML += `
+                <div class="menu-item" style="display:flex;align-items:flex-start;margin-bottom:1.5em;gap:16px;">
+                    <img class="item-img" src="${item['图片_URL']||''}" alt="${item['名称']}">
+                    <div style="flex:1">
+                        <div style="font-weight:bold;font-size:1.1em">
+                            ${item['名称']}
+                            ${item['标签(tag)'] ? `<span class="badge">${item['标签(tag)']}</span>` : ''}
+                        </div>
+                        ${item['备注'] ? `<div class="item-desc">${item['备注']}</div>` : ''}
+                        <div class="spec-row">
+                            ${specs.map(s=>`
+                                <label>
+                                    <input type="radio" name="spec_${idx}" value="${s.spec}:${s.price}" ${s===specs[0]?'checked':''}/>
+                                    ${s.spec} <span style="color:#f55">￥${s.price}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+
+            buildOrderForm();
+        }
+
+        function buildOrderForm() {
+            // 动态填充菜单下拉
+            const orderSelect = document.getElementById('order-item-select');
+            orderSelect.innerHTML = '';
+            MENU.forEach((item, idx) => {
+                orderSelect.innerHTML += `<option value="${idx}">${item['名称']}</option>`;
+            });
+            orderSelect.onchange = () => showSpecOptions(orderSelect.value);
+            showSpecOptions(0); // 默认显示第一个
+        }
+
+        function showSpecOptions(menuIdx) {
+            const item = MENU[menuIdx];
+            const specDiv = document.getElementById('order-spec-div');
+            specDiv.innerHTML = "";
+            SPEC_NAMES.forEach(spec => {
+                if (item[spec] && item[spec].trim()) {
+                    specDiv.innerHTML += `
+                        <label>
+                            <input type="radio" name="order_spec" value="${spec}:${item[spec].trim()}" />
+                            ${spec} <span style="color:#f55">￥${item[spec].trim()}</span>
+                        </label>
+                    `;
+                }
+            });
+            // 默认选中第一个
+            let first = specDiv.querySelector('input[type=radio]');
+            if (first) first.checked = true;
+        }
+
         window.onload = function () {
-            // Mini App 模式下获取用户
+            loadMenuFromSheet();
+
             if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
                 const user = Telegram.WebApp.initDataUnsafe.user;
                 document.getElementById('telegram-info').innerHTML =
-                    已登录：<b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#666">(ID: ${user.id})</span>;
-                document.getElementById('orderForm').style.display = 'flex';
+                    `已登录：<b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#666">(ID: ${user.id})</span>`;
+                document.getElementById('orderForm').style.display = 'block';
                 window.telegramUser = user;
             } else {
-                // 不是在 Telegram 内部打开
                 document.getElementById('telegram-info').innerHTML =
-                    <span style="color:#f55">请在 Telegram 内部打开（点击菜单/按钮进入）</span>;
+                    `<span style="color:#f55">请在 Telegram 内部打开（点击菜单/按钮进入）</span>`;
                 document.getElementById('orderForm').style.display = 'none';
             }
         }
+
         async function submitOrder(e) {
             e.preventDefault();
             const user = window.telegramUser;
@@ -34,12 +126,22 @@
                 alert("请在 Telegram 内部打开本页面");
                 return;
             }
+            const idx = document.getElementById('order-item-select').value;
+            const item = MENU[idx];
+            const specRadio = document.querySelector('input[name=order_spec]:checked');
+            if (!specRadio) { alert("请选择规格"); return; }
+            const [spec, price] = specRadio.value.split(':');
             const formData = Object.fromEntries(new FormData(e.target));
             formData.telegram_id = user.id;
             formData.telegram_name = user.username || '';
             formData.first_name = user.first_name || '';
             formData.last_name = user.last_name || '';
-            // POST 到你 Render 的 Flask 地址
+            formData.item = item['名称'];
+            formData.img = item['图片_URL'];
+            formData.tag = item['标签(tag)'];
+            formData.spec = spec;
+            formData.price = price;
+            // POST 到 Flask 服务器
             const resp = await fetch("https://batmanshop.onrender.com/order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -58,22 +160,15 @@
     <div class="container">
         <h2>Batman1788 下单表单</h2>
         <div id="telegram-info">正在检测 Telegram 登录...</div>
+        <div id="menu-list"></div>
         <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
             <label>姓名：<input name="name" required placeholder="请输入您的姓名"></label>
             <label>电话：<input name="phone" required placeholder="手机号"></label>
             <label>商品：
-                <select name="item">
-                    <option value="经典拿铁">经典拿铁</option>
-                    <option value="黑巧摩卡">黑巧摩卡</option>
-                    <option value="燕麦奶茶">燕麦奶茶</option>
-                </select>
+                <select id="order-item-select" name="item"></select>
             </label>
             <label>规格：
-                <select name="spec">
-                    <option value="大杯">大杯</option>
-                    <option value="中杯">中杯</option>
-                    <option value="小杯">小杯</option>
-                </select>
+                <div id="order-spec-div"></div>
             </label>
             <label>数量：<input name="qty" type="number" value="1" min="1"></label>
             <label>备注：<input name="note" placeholder="可选"></label>
