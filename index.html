@@ -3,128 +3,182 @@
 <head>
   <meta charset="UTF-8" />
   <title>Batman1788 下单表单</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body { font-family: system-ui,sans-serif; background: #f5f6fa; margin: 0; }
-    .container { max-width: 420px; margin: 36px auto; background: #fff; border-radius: 18px; box-shadow: 0 2px 18px #0001; padding: 36px 24px; }
-    h2 { text-align: center; }
-    .item-card { display: flex; align-items: center; margin: 12px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;}
-    .item-card img { width: 60px; height: 60px; object-fit: cover; border-radius: 10px; margin-right: 14px;}
-    .item-info { flex: 1; }
-    .item-name { font-weight: bold; }
-    .item-tag { font-size: 12px; color: #888;}
-    .item-price { margin-top: 5px; color: #C94;}
-    .login-wrap { text-align:center;margin-bottom:20px;}
-    .tg-login {margin-bottom:18px;}
-    #orderForm {margin-top:20px;}
-    .submit-btn {margin-top:20px; width:100%;padding:10px; border:none; border-radius:6px; background:#2481CC; color:#fff; font-size:16px;}
+    body { font-family: 'PingFang SC',Arial,sans-serif; margin:0; background:#f3f6fa;}
+    .container { max-width:480px; margin:30px auto; background:#fff; border-radius:18px; box-shadow:0 6px 24px #0001; padding:28px 16px; }
+    h2 { text-align:center; margin:12px 0 24px 0; letter-spacing:2px;}
+    #tg-login, #user-info {text-align:center;}
+    .menu-item {display:flex;align-items:center;gap:14px;background:#f8fafb;border-radius:12px;margin-bottom:18px;padding:12px 10px;}
+    .menu-item img {width:64px;height:64px;border-radius:10px;object-fit:cover;background:#eee;}
+    .menu-detail{flex:1;}
+    .menu-title {font-size:1.08em;font-weight:600;}
+    .menu-tags {font-size:.97em;color:#56aaff;margin-left:4px;}
+    .menu-price {color:#f60;font-weight:bold;margin-right:8px;}
+    form label {font-size:1em;}
+    form input, form select, form textarea {
+      width:100%;font-size:1em;margin:5px 0 15px 0;padding:7px 10px;border-radius:6px;border:1px solid #ccc;
+    }
+    form button {
+      background:#0099ff;color:#fff;font-size:1.1em;padding:10px 0;border:none;border-radius:7px;width:100%;cursor:pointer;box-shadow:0 2px 8px #0099ff30;font-weight:bold;
+    }
+    .success { color:#24c974; text-align:center; font-size:1.2em;}
+    .error { color:#f44; text-align:center;}
   </style>
-  <!-- Telegram 登录按钮 JS -->
-  <script src="https://telegram.org/js/telegram-widget.js?7"
-    data-telegram-login="batmangiveawaybot"
-    data-size="large"
-    data-userpic="true"
-    data-request-access="write"
-    data-onauth="onTelegramAuth(user)"
-    async>
-  </script>
 </head>
 <body>
-  <div class="container">
-    <h2>Batman1788 下单表单</h2>
-    <div id="tg-login" class="login-wrap">
-      <div>请先用 <b>Telegram 登录</b></div>
-      <!-- Telegram 登录按钮会自动插入这里 -->
-    </div>
-    <div id="user-info" style="display:none"></div>
+<div class="container">
+  <h2>Batman1788 下单表单</h2>
+  <div id="tg-login"></div>
+  <div id="user-info" style="display:none"></div>
+  <div id="menu-list"></div>
+  <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
+    <label>姓名 <input name="name" required placeholder="请填写真实姓名"></label>
+    <label>电话 <input name="phone" required placeholder="手机号"></label>
+    <label>商品
+      <select name="item" id="itemSelect"></select>
+    </label>
+    <label>规格
+      <select name="spec">
+        <option value="Q">Q（小）</option>
+        <option value="H">H（中）</option>
+        <option value="OZ">OZ（大）</option>
+      </select>
+    </label>
+    <label>数量 <input name="qty" type="number" value="1" min="1" required></label>
+    <label>备注 <textarea name="note" placeholder="可填写额外需求" rows="2"></textarea></label>
+    <button type="submit">提交订单</button>
+    <div id="orderStatus"></div>
+  </form>
+</div>
+<script>
+const SHEET_ID = '1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs'; // 你的Sheet
+const SHEET_TAB = 'menu';
+const API_URL = 'https://batmanshop.onrender.com/order'; // 你的后端地址
+const BOT_NAME = 'batmangiveawaybot'; // 你的Bot用户名
 
-    <div id="menu-list"></div>
-    <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
-      <input type="hidden" name="telegram_id" />
-      <input type="hidden" name="telegram_name" />
-      <input type="hidden" name="first_name" />
-      <input type="hidden" name="last_name" />
-      <input type="hidden" name="photo_url" />
+let menu = [];
+let user = null;
 
-      <div>数量：<input name="qty" type="number" value="1" min="1" style="width:60px"></div>
-      <div>备注：<input name="note" style="width:90%"></div>
-      <button type="submit" class="submit-btn">提交订单</button>
-    </form>
-  </div>
-  <script>
-    // 你的 Google Sheet CSV 直链
-    const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs/export?format=csv&id=1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs&gid=0";
-    // 你的后端接口
-    const ORDER_API = "https://batmanshop.onrender.com/order";
+// ----------- 1. 环境识别与登录 -----------
+function showMenuAndForm() {
+  document.getElementById('tg-login').style.display = "none";
+  document.getElementById('user-info').style.display = "";
+  document.getElementById('user-info').innerHTML =
+    `已登录: <b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#888">@${user.username||''}</span>`;
+  document.getElementById('orderForm').style.display = "";
+  renderMenu();
+}
 
-    let currentUser = null, selectedItem = null, menuItems = [];
+// Mini App 登录
+if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  user = Telegram.WebApp.initDataUnsafe.user;
+  showMenuAndForm();
+} else {
+  // 浏览器环境插入 Telegram 登录按钮
+  let div = document.getElementById('tg-login');
+  div.innerHTML = '';
+  let script = document.createElement('script');
+  script.src = "https://telegram.org/js/telegram-widget.js?7";
+  script.setAttribute('data-telegram-login', BOT_NAME);
+  script.setAttribute('data-size', 'large');
+  script.setAttribute('data-userpic', 'true');
+  script.setAttribute('data-request-access', 'write');
+  script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+  script.async = true;
+  div.appendChild(script);
+}
 
-    // 解析 CSV 并渲染菜单
-    fetch(SHEET_CSV_URL).then(r => r.text()).then(csv => {
-      const rows = csv.trim().split('\n').map(line => line.split(','));
-      const header = rows[0];
-      menuItems = rows.slice(1).map(row => {
-        const obj = {};
-        header.forEach((k, i) => obj[k.trim()] = row[i] ? row[i].trim() : '');
+window.onTelegramAuth = function(u) {
+  user = u;
+  showMenuAndForm();
+}
+
+// ----------- 2. Google Sheet 拉取菜单 -----------
+async function fetchMenu() {
+  // 这里直接用 Sheets v4 API，无需API Key（公开表单可读）
+  let url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_TAB}?alt=json`;
+  try {
+    let r = await fetch(url);
+    let json = await r.json();
+    let rows = json.values;
+    let heads = rows[0];
+    menu = rows.slice(1)
+      .filter(row => (row[heads.indexOf('是否上架')] === "1" || row[heads.indexOf('是否上架')] === "是"))
+      .map(row => {
+        let obj = {};
+        heads.forEach((h,i)=>{ obj[h]=row[i]||""; });
         return obj;
-      }).filter(item => item['是否上架'] !== '0');
-      showMenu();
-    });
+      });
+    renderMenu();
+  } catch (e) {
+    document.getElementById('menu-list').innerHTML = '<div class="error">菜单读取失败！</div>';
+  }
+}
 
-    function showMenu() {
-      const menuList = document.getElementById('menu-list');
-      menuList.innerHTML = menuItems.map(item => `
-        <div class="item-card" onclick="selectItem('${item.id}')">
-          <img src="${item.图片_URL}" />
-          <div class="item-info">
-            <div class="item-name">${item.名称}</div>
-            <div class="item-tag">${item.标签(tag) || ''}</div>
-            <div class="item-price">Q: ${item.Q} | H: ${item.H} | OZ: ${item.OZ}</div>
-          </div>
+// ----------- 3. 菜单渲染和选择 -----------
+function renderMenu() {
+  let list = document.getElementById('menu-list');
+  if (!menu.length) { fetchMenu(); return; }
+  // 下拉框
+  let select = document.getElementById('itemSelect');
+  select.innerHTML = "";
+  menu.forEach(item=>{
+    let text = `${item.名称} ${item['标签(tag)']?('('+item['标签(tag)']+')'):""} (${item.Q}/${item.H}/${item.OZ})`;
+    let opt = document.createElement('option');
+    opt.value = item.名称;
+    opt.textContent = text;
+    select.appendChild(opt);
+  });
+  // 图文菜单
+  list.innerHTML = menu.map(item=>`
+    <div class="menu-item">
+      <img src="${item['图片_URL']}" loading="lazy">
+      <div class="menu-detail">
+        <div class="menu-title">${item.名称}
+          ${item['标签(tag)']?`<span class="menu-tags">${item['标签(tag)']}</span>`:""}
         </div>
-      `).join('');
-    }
+        <div class="menu-price">Q: ${item.Q} / H: ${item.H} / OZ: ${item.OZ}</div>
+        <div style="color:#aaa;font-size:.92em;">${item.备注||""}</div>
+      </div>
+    </div>
+  `).join("");
+}
 
-    // 选择商品
-    window.selectItem = function(id) {
-      selectedItem = menuItems.find(i => i.id === id);
-      document.getElementById('orderForm').style.display = '';
-      // 可以在表单上显示选中的商品，也可以填入隐藏 input
-      document.querySelector('#orderForm [name="item"]').value = selectedItem.名称;
-    }
-
-    // Telegram 登录回调
-    function onTelegramAuth(user) {
-      currentUser = user;
-      document.getElementById('tg-login').style.display = "none";
-      document.getElementById('user-info').style.display = "";
-      document.getElementById('user-info').innerHTML =
-        `已登录: <b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#888;">@${user.username}</span>`;
-      // 填充到 form 隐藏域
-      ['id','username','first_name','last_name','photo_url'].forEach(k => {
-        document.querySelector(`#orderForm [name="telegram_${k.replace('id', 'id')}"]`).value = user[k] || '';
-      });
-    }
-
-    // 下单
-    async function submitOrder(e) {
-      e.preventDefault();
-      if (!currentUser) return alert("请先用 Telegram 登录！");
-      if (!selectedItem) return alert("请先选择商品！");
-      const fd = new FormData(e.target);
-      fd.append('item', selectedItem.名称);
-      fd.append('item_id', selectedItem.id);
-      fd.append('item_pic', selectedItem.图片_URL);
-      fd.append('item_price', selectedItem.Q); // 这里也可以选其他规格
-      const obj = {};
-      for (const [k,v] of fd.entries()) obj[k] = v;
-      const resp = await fetch(ORDER_API, {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(obj)
-      });
-      if (resp.ok) alert("下单成功！"); else alert("提交失败！");
+// ----------- 4. 下单逻辑 -----------
+async function submitOrder(e) {
+  e.preventDefault();
+  if (!user) return alert("请先用 Telegram 登录");
+  let form = Object.fromEntries(new FormData(e.target));
+  form.telegram_id = user.id;
+  form.telegram_name = user.username || '';
+  form.first_name = user.first_name || '';
+  form.last_name = user.last_name || '';
+  form.photo_url = user.photo_url || '';
+  // 价格信息
+  let itemInfo = menu.find(x=>x.名称===form.item);
+  if (itemInfo) {
+    form.price = itemInfo[form.spec] || "";
+    form.menu_tag = itemInfo['标签(tag)'] || "";
+  }
+  let st = document.getElementById('orderStatus');
+  st.innerHTML = "提交中…";
+  try {
+    let r = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form)
+    });
+    if (r.ok) {
+      st.innerHTML = "<div class='success'>下单成功！</div>";
       e.target.reset();
+    } else {
+      st.innerHTML = "<div class='error'>提交失败，请稍后再试！</div>";
     }
-  </script>
+  } catch {
+    st.innerHTML = "<div class='error'>网络异常，请重试！</div>";
+  }
+}
+</script>
 </body>
 </html>
