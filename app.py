@@ -4,7 +4,7 @@ from telegram import Bot
 app = Flask(__name__)
 TOKEN = '7582978452:AAE1Zdz62epr589ezQSnZS9TdraznuW2Rgw'           # 你的Telegram Bot Token
 ADMIN_ID = 6837915435               # 管理员的chat_id
-CHANNEL_USERNAME = '-1002771129620'  # 频道用户名，可选
+CHANNEL_USERNAME = '@menutest'  # 频道用户名，可选
 
 bot = Bot(token=TOKEN)
 
