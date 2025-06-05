@@ -495,16 +495,19 @@ try {
     });
     if (resp.ok) {
         const data = await resp.json();
-        if(data.result === "ok") ok = true;
+        if (data.result === "ok") ok = true;
     }
-} catch(e) {}
-btn.disabled=false; btn.innerText="提交订单";
-if(ok){
+} catch (e) {
+    // 可以加一句 console.error(e) 便于debug
+}
+btn.disabled = false; btn.innerText = "提交订单";
+if (ok) {
     alert("下单成功！");
     cart = []; updateCartBadge(); closeCartModal();
-}else{
+} else {
     alert("提交失败，请稍后再试。");
 }
+
         }
         // --- 订单历史页 ---
         async function loadOrderHistory(){
