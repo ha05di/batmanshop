@@ -14,9 +14,17 @@
         .category-block { margin-bottom:18px; }
         .category-title { font-size:1.13em; font-weight:700; margin:14px 0 7px 5px; display:flex; align-items:center; gap:7px;}
         .goods-list {
-            display: flex; flex-direction: row; gap: 14px; overflow-x: auto;
-            padding-bottom: 8px; scrollbar-width: thin;
-        }
+    display: flex;
+    flex-direction: row;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;                /* Firefox 隐藏滚动条 */
+    -webkit-overflow-scrolling: touch;    /* iOS 惯性滑动 */
+}
+        .goods-list::-webkit-scrollbar {
+    display: none;                        /* Chrome/Safari/Android 隐藏滚动条 */
+}
         .goods-card { background:#fff; border-radius:15px; box-shadow:0 2px 8px #0001; padding:13px 12px; display:flex; flex-direction:column; align-items:center; position:relative; min-width:130px; max-width:150px; flex:0 0 auto; cursor:pointer; transition:box-shadow .18s;}
         .goods-card:active { box-shadow:0 4px 16px #0002;}
         .goods-img { width:66px; height:66px; object-fit:cover; border-radius:11px; border:1px solid #eee; background:#fafbfc; margin-bottom:8px; }
