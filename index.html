@@ -36,7 +36,7 @@
         /* 商品详情弹窗 */
         #item-modal { display:none; position:fixed; top:0;left:0;right:0;bottom:0; z-index:999; background:#0005; align-items:center; justify-content:center;}
         #item-panel { background:#fff; border-radius:18px; max-width:410px; width:97%; margin:0 auto; padding:1.3em 1.1em 1.2em 1.1em; box-shadow:0 8px 32px #0003; display:flex; flex-direction:column; gap:10px; max-height:92vh; overflow:auto;}
-        .item-modal-img { width:80px;height:80px; border-radius:12px; object-fit:cover; margin:0 auto 5px auto;}
+        .item-modal-img { width:80px;height:80px; border-radius:12px; object-fit:cover; margin:0 auto 5px auto; cursor:pointer;}
         .item-modal-title { font-size:1.12em; font-weight:700; text-align:center;}
         .item-modal-tag { margin-left:8px; }
         .item-modal-desc { color:#888; font-size:.96em; margin-bottom:.6em; text-align:center;}
@@ -74,12 +74,15 @@
             #item-panel {padding:1em .5em;}
             #cart-panel {padding:1em .5em;}
         }
+        /* 大图查看器 */
+        #img-viewer { display:none; position:fixed;z-index:2000;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.97);align-items:center;justify-content:center;}
+        #img-viewer-pic { max-width:95vw;max-height:85vh;border-radius:20px;box-shadow:0 4px 40px #0007;transition:all .2s;}
     </style>
 </head>
 <body>
     <!-- 顶部广告 -->
     <div class="ad-banner">
-        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner.png" alt="广告">
+        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner/coffee-banner.jpg" alt="广告">
     </div>
     <div class="main">
         <!-- 首页：分区商品列表 -->
@@ -92,8 +95,15 @@
         </div>
         <!-- 我的 -->
         <div class="page" id="page-me">
-            <div style="text-align:center; color:#888; margin-top:40px;">
-                <div id="telegram-info"></div>
+            <div style="max-width:320px;margin:0 auto;">
+                <div style="font-size:1.07em;font-weight:600;margin:12px 0 8px 0;">下单人信息</div>
+                <form id="userInfoForm" onsubmit="saveUserInfo(event)">
+                    <label>姓名：<input name="name" required placeholder="请输入您的姓名"></label>
+                    <label>电话：<input name="phone" required placeholder="手机号"></label>
+                    <button type="submit" class="cart-order-btn" style="margin-top:13px;">保存信息</button>
+                </form>
+                <div id="user-info-saved" style="color:#4caf50;font-weight:500;display:none;margin-top:8px;">已保存，下单自动带入！</div>
+                <div id="telegram-info" style="margin-top:23px;"></div>
             </div>
         </div>
     </div>
@@ -120,7 +130,7 @@
     <!-- 商品详情弹窗 -->
     <div id="item-modal">
         <div id="item-panel">
-            <img id="item-modal-img" class="item-modal-img" src="">
+            <img id="item-modal-img" class="item-modal-img" src="" onclick="showImgViewer(this.src)">
             <div class="item-modal-title" id="item-modal-title"></div>
             <div id="item-modal-tag"></div>
             <div class="item-modal-desc" id="item-modal-desc"></div>
@@ -144,14 +154,17 @@
             <div class="cart-footer">
                 <div class="cart-total">总价：<span id="cart-total">0</span></div>
                 <form id="cartForm" onsubmit="submitCartOrder(event)">
-                    <label>姓名：<input name="name" required placeholder="请输入您的姓名"></label>
-                    <label>电话：<input name="phone" required placeholder="手机号"></label>
                     <label>备注：<input name="note" placeholder="可选"></label>
                     <button type="submit" class="cart-order-btn">提交订单</button>
                 </form>
                 <button type="button" class="cart-close-btn" onclick="closeCartModal()">关闭</button>
+                <div id="cart-user-tips" style="color:#e55;font-size:.98em;margin-top:5px;display:none;"></div>
             </div>
         </div>
+    </div>
+    <!-- 大图全屏查看器 -->
+    <div id="img-viewer" style="display:none;position:fixed;z-index:2000;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.97);align-items:center;justify-content:center;">
+        <img id="img-viewer-pic" src="" style="max-width:95vw;max-height:85vh;border-radius:20px;box-shadow:0 4px 40px #0007;transition:all .2s;">
     </div>
     <script>
         // --- 全局数据 ---
@@ -360,9 +373,20 @@
                 alert("购物车是空的");
                 return;
             }
-            let formData = Object.fromEntries(new FormData(e.target));
+            // 取本地用户信息
+            const raw = localStorage.getItem('batman_user_info');
+            if(!raw){
+                document.getElementById('cart-user-tips').innerText = "请先在“我”页面填写姓名和电话";
+                document.getElementById('cart-user-tips').style.display = '';
+                return;
+            }
+            document.getElementById('cart-user-tips').style.display = 'none';
+            const userInfo = JSON.parse(raw);
+            // 获取备注
+            const formData = Object.fromEntries(new FormData(e.target));
             let payload = {
-                ...formData,
+                ...userInfo,
+                note: formData.note||'',
                 telegram_id: user.id,
                 telegram_name: user.username || '',
                 first_name: user.first_name || '',
@@ -395,9 +419,36 @@
             }
         }
         switchPage('home');
-        // --- Telegram登录信息 ---
+        // --- 用户信息保存和读取 ---
+        function saveUserInfo(e){
+            e.preventDefault();
+            const d = Object.fromEntries(new FormData(e.target));
+            localStorage.setItem('batman_user_info', JSON.stringify(d));
+            document.getElementById('user-info-saved').style.display = '';
+            setTimeout(()=>{ document.getElementById('user-info-saved').style.display = 'none'; }, 2000);
+        }
+        function loadUserInfo(){
+            const raw = localStorage.getItem('batman_user_info');
+            if(raw){
+                const d = JSON.parse(raw);
+                const f = document.getElementById('userInfoForm');
+                f.name.value = d.name||"";
+                f.phone.value = d.phone||"";
+            }
+        }
+        // --- 大图查看器 ---
+        function showImgViewer(src) {
+            const viewer = document.getElementById('img-viewer');
+            document.getElementById('img-viewer-pic').src = src;
+            viewer.style.display = 'flex';
+            viewer.onclick = function(e){
+                if(e.target === viewer) viewer.style.display = 'none';
+            }
+        }
+        // --- Telegram登录信息和初始化 ---
         window.onload = function () {
             loadMenuFromSheet();
+            loadUserInfo(); // 自动填充
             if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
                 const user = Telegram.WebApp.initDataUnsafe.user;
                 window.telegramUser = user;
