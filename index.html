@@ -13,8 +13,29 @@
         .main { padding:8px 10px 70px 10px; max-width:520px; margin:0 auto; }
         .category-block { margin-bottom:18px; }
         .category-title { font-size:1.13em; font-weight:700; margin:14px 0 7px 5px; display:flex; align-items:center; gap:7px;}
-        .goods-list { display:flex; flex-wrap:wrap; gap:14px; }
-        .goods-card { background:#fff; border-radius:15px; box-shadow:0 2px 8px #0001; padding:13px 12px; display:flex; flex-direction:column; width:154px; min-height:200px; align-items:center; position:relative;}
+        .goods-list {
+    display: flex;
+    flex-direction: row;    /* 横向排列 */
+    gap: 14px;              /* 卡片间距 */
+    overflow-x: auto;       /* 横向滚动 */
+    padding-bottom: 8px;    /* 增加滚动条和内容距离 */
+    scrollbar-width: thin;  /* 优化滚动条 */
+    /* 可选：让滚动条不那么明显（美观用） */
+    /* scrollbar-color: #ddd #fff; */
+}
+        .goods-card {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px #0001;
+    padding: 13px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-width: 130px;   /* 卡片最小宽度，保证横排 */
+    max-width: 150px;
+    flex: 0 0 auto;     /* 不自动换行 */
+}
         .goods-img { width:66px; height:66px; object-fit:cover; border-radius:11px; border:1px solid #eee; background:#fafbfc; margin-bottom:8px; }
         .goods-title { font-size:1.03em; font-weight:600; margin-bottom:2px; text-align:center;}
         .badge { display:inline-block; background:#ffb940; color:#543; font-size:.93em; border-radius:7px; padding:1.5px 10px; margin-left:6px; margin-bottom:3px;}
