@@ -14,17 +14,11 @@
         .category-block { margin-bottom:18px; }
         .category-title { font-size:1.13em; font-weight:700; margin:14px 0 7px 5px; display:flex; align-items:center; gap:7px;}
         .goods-list {
-    display: flex;
-    flex-direction: row;
-    gap: 14px;
-    overflow-x: auto;
-    padding-bottom: 8px;
-    scrollbar-width: none;                /* Firefox 隐藏滚动条 */
-    -webkit-overflow-scrolling: touch;    /* iOS 惯性滑动 */
-}
-        .goods-list::-webkit-scrollbar {
-    display: none;                        /* Chrome/Safari/Android 隐藏滚动条 */
-}
+            display: flex; flex-direction: row; gap: 14px; overflow-x: auto;
+            padding-bottom: 8px; scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .goods-list::-webkit-scrollbar { display: none; }
         .goods-card { background:#fff; border-radius:15px; box-shadow:0 2px 8px #0001; padding:13px 12px; display:flex; flex-direction:column; align-items:center; position:relative; min-width:130px; max-width:150px; flex:0 0 auto; cursor:pointer; transition:box-shadow .18s;}
         .goods-card:active { box-shadow:0 4px 16px #0002;}
         .goods-img { width:66px; height:66px; object-fit:cover; border-radius:11px; border:1px solid #eee; background:#fafbfc; margin-bottom:8px; }
@@ -70,7 +64,7 @@
         .cart-footer { margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:8px;}
         .cart-total { font-weight:600; font-size:1.07em;}
         #cartForm label {display:block; margin:10px 0 2px 0;}
-        #cartForm input {width:100%; padding:6px; border-radius:5px; border:1px solid #ccc;}
+        #cartForm input, #cartForm select {width:100%; padding:6px; border-radius:5px; border:1px solid #ccc;}
         .cart-order-btn { background:#1a73e8; color:#fff; border:none; border-radius:9px; font-size:1.05em; padding:9px 0; width:100%; }
         .cart-close-btn { background:#eee; color:#444; border:none; border-radius:7px; margin-top:-2px; padding:6px 0; width:100%; }
         @media (max-width:600px) {
@@ -90,7 +84,7 @@
 <body>
     <!-- 顶部广告 -->
     <div class="ad-banner">
-        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner.png" alt="广告">
+        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner/coffee-banner.jpg" alt="广告">
     </div>
     <div class="main">
         <!-- 首页：分区商品列表 -->
@@ -111,6 +105,12 @@
                     <button type="submit" class="cart-order-btn" style="margin-top:13px;">保存信息</button>
                 </form>
                 <div id="user-info-saved" style="color:#4caf50;font-weight:500;display:none;margin-top:8px;">已保存，下单自动带入！</div>
+                <div style="font-size:1.07em;font-weight:600;margin:18px 0 8px 0;">送货地址</div>
+                <div id="address-list"></div>
+                <form id="addressForm" onsubmit="addAddress(event)" style="margin-bottom:13px;">
+                    <input name="address" required placeholder="请输入新地址" style="width:75%">
+                    <button type="submit" style="padding:5px 10px;border-radius:6px;background:#1a73e8;color:#fff;border:none;margin-left:5px;">添加</button>
+                </form>
                 <div id="telegram-info" style="margin-top:23px;"></div>
             </div>
         </div>
@@ -162,6 +162,11 @@
             <div class="cart-footer">
                 <div class="cart-total">总价：<span id="cart-total">0</span></div>
                 <form id="cartForm" onsubmit="submitCartOrder(event)">
+                    <label>送货地址：
+                        <select name="address" id="address-select" required style="width:100%;padding:7px;border-radius:5px;">
+                            <!-- JS 渲染 -->
+                        </select>
+                    </label>
                     <label>备注：<input name="note" placeholder="可选"></label>
                     <button type="submit" class="cart-order-btn">提交订单</button>
                 </form>
@@ -328,6 +333,7 @@
         }
         function showCartModal() {
             renderCartList();
+            renderAddressSelect();
             document.getElementById('cart-modal').style.display='flex';
         }
         function closeCartModal(){
@@ -369,6 +375,47 @@
             cart.splice(idx,1);
             renderCartList(); updateCartBadge();
         }
+
+        // --- 地址管理 ---
+        function renderAddressList(){
+            let addrs = JSON.parse(localStorage.getItem('batman_addr_list')||'[]');
+            let list = addrs.map((addr,idx)=>`
+                <div style="margin-bottom:7px;display:flex;align-items:center;">
+                    <span style="flex:1">${addr}</span>
+                    <button onclick="delAddress(${idx})" style="background:#ffbaba;color:#b22;border:none;border-radius:5px;padding:2px 7px;">删</button>
+                </div>
+            `).join('');
+            document.getElementById('address-list').innerHTML = list || '<div style="color:#aaa;">暂无地址</div>';
+        }
+        function addAddress(e){
+            e.preventDefault();
+            let val = e.target.address.value.trim();
+            if(!val) return;
+            let addrs = JSON.parse(localStorage.getItem('batman_addr_list')||'[]');
+            addrs.push(val);
+            localStorage.setItem('batman_addr_list', JSON.stringify(addrs));
+            e.target.reset();
+            renderAddressList();
+        }
+        function delAddress(idx){
+            let addrs = JSON.parse(localStorage.getItem('batman_addr_list')||'[]');
+            addrs.splice(idx,1);
+            localStorage.setItem('batman_addr_list', JSON.stringify(addrs));
+            renderAddressList();
+        }
+        function renderAddressSelect(){
+            let sel = document.getElementById('address-select');
+            if(!sel) return;
+            let addrs = JSON.parse(localStorage.getItem('batman_addr_list')||'[]');
+            if(addrs.length === 0){
+                sel.innerHTML = `<option value="">请先在“我”页面添加地址</option>`;
+                sel.disabled = true;
+            } else {
+                sel.innerHTML = addrs.map(a=>`<option>${a}</option>`).join('');
+                sel.disabled = false;
+            }
+        }
+
         // --- 提交购物车订单 ---
         async function submitCartOrder(e) {
             e.preventDefault();
@@ -390,10 +437,11 @@
             }
             document.getElementById('cart-user-tips').style.display = 'none';
             const userInfo = JSON.parse(raw);
-            // 获取备注
+            // 获取备注和地址
             const formData = Object.fromEntries(new FormData(e.target));
             let payload = {
                 ...userInfo,
+                address: formData.address||'',
                 note: formData.note||'',
                 telegram_id: user.id,
                 telegram_name: user.username || '',
@@ -457,6 +505,7 @@
         window.onload = function () {
             loadMenuFromSheet();
             loadUserInfo(); // 自动填充
+            renderAddressList();
             if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
                 const user = Telegram.WebApp.initDataUnsafe.user;
                 window.telegramUser = user;
