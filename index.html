@@ -17,25 +17,37 @@
             display: flex; flex-direction: row; gap: 14px; overflow-x: auto;
             padding-bottom: 8px; scrollbar-width: thin;
         }
-        .goods-card { background:#fff; border-radius:15px; box-shadow:0 2px 8px #0001; padding:13px 12px; display:flex; flex-direction:column; align-items:center; position:relative; min-width:130px; max-width:150px; flex:0 0 auto;}
+        .goods-card { background:#fff; border-radius:15px; box-shadow:0 2px 8px #0001; padding:13px 12px; display:flex; flex-direction:column; align-items:center; position:relative; min-width:130px; max-width:150px; flex:0 0 auto; cursor:pointer; transition:box-shadow .18s;}
+        .goods-card:active { box-shadow:0 4px 16px #0002;}
         .goods-img { width:66px; height:66px; object-fit:cover; border-radius:11px; border:1px solid #eee; background:#fafbfc; margin-bottom:8px; }
         .goods-title { font-size:1.03em; font-weight:600; margin-bottom:2px; text-align:center;}
         .badge { display:inline-block; background:#ffb940; color:#543; font-size:.93em; border-radius:7px; padding:1.5px 10px; margin-left:6px; margin-bottom:3px;}
         .tag-indica { background:#b6a7f5; color:#333; }
         .tag-sativa { background:#ffbb66; color:#222; }
         .goods-specs { margin:5px 0 0 0; text-align:center; }
-        .goods-spec-btn { margin:3px 4px 0 0; border:none; border-radius:7px; background:#eee; padding:2px 10px; font-size:.99em; cursor:pointer; }
-        .goods-spec-btn.selected { background:#1a73e8; color:#fff; }
-        .goods-price { color:#e91e63; font-size:.97em; font-weight:600; margin-left:3px;}
-        .cart-btn { background:#f78031; color:#fff; border:none; border-radius:7px; font-size:.96em; margin-top:7px; padding:6px 16px; cursor:pointer; }
         .goods-desc { color:#888; font-size:.91em; margin:2px 0 0 0;text-align:center;}
         .nav-bar { position:fixed; left:0; right:0; bottom:0; height:55px; background:#fff; border-top:1px solid #eee; display:flex; justify-content:space-around; align-items:center; box-shadow:0 -2px 10px #0001; z-index:10;}
         .nav-btn { flex:1; text-align:center; color:#666; font-size:.98em; padding-top:5px; position:relative;}
         .nav-btn.active { color:#1a73e8; font-weight:600;}
         .nav-btn svg { display:block; margin:0 auto 2px auto;}
-        .cart-count-dot { display:inline-block; position:absolute; right:26%; top:5px; background:#e91e63; color:#fff; border-radius:50%; min-width:18px; font-size:.92em; font-weight:700; padding:2px 5px; }
+        .cart-count-dot { display:inline-block; position:absolute; right:28%; top:5px; background:#e91e63; color:#fff; border-radius:50%; min-width:18px; font-size:.92em; font-weight:700; padding:2px 5px; }
         .page { display:none; }
         .page.active { display:block; }
+        /* 商品详情弹窗 */
+        #item-modal { display:none; position:fixed; top:0;left:0;right:0;bottom:0; z-index:999; background:#0005; align-items:center; justify-content:center;}
+        #item-panel { background:#fff; border-radius:18px; max-width:410px; width:97%; margin:0 auto; padding:1.3em 1.1em 1.2em 1.1em; box-shadow:0 8px 32px #0003; display:flex; flex-direction:column; gap:10px; max-height:92vh; overflow:auto;}
+        .item-modal-img { width:80px;height:80px; border-radius:12px; object-fit:cover; margin:0 auto 5px auto;}
+        .item-modal-title { font-size:1.12em; font-weight:700; text-align:center;}
+        .item-modal-tag { margin-left:8px; }
+        .item-modal-desc { color:#888; font-size:.96em; margin-bottom:.6em; text-align:center;}
+        .item-modal-specs { text-align:center; margin:0 0 9px 0;}
+        .item-spec-btn { border:none; border-radius:7px; background:#eee; padding:4px 14px; font-size:.99em; cursor:pointer; margin:0 5px 5px 0;}
+        .item-spec-btn.selected { background:#1a73e8; color:#fff; }
+        .item-modal-qty { display:flex;align-items:center;justify-content:center;gap:12px;margin:8px 0;}
+        .item-qty-btn { background:#eee; border:none; font-size:1.16em; width:26px; height:26px; border-radius:6px; cursor:pointer; }
+        .item-modal-footer { display:flex; flex-direction:column; align-items:center; gap:6px;}
+        .item-modal-cart-btn { background:#f78031; color:#fff; border:none; border-radius:9px; font-size:1.05em; padding:10px 0; width:100%; }
+        .item-modal-close-btn { background:#eee; color:#444; border:none; border-radius:7px; margin-top:-2px; padding:7px 0; width:100%; }
         /* 购物车弹窗 */
         #cart-modal { display:none; position:fixed; top:0;left:0;right:0;bottom:0; z-index:999; background:#0005; align-items:center; justify-content:center;}
         #cart-panel { background:#fff; border-radius:18px; max-width:410px; width:97%; margin:0 auto; padding:1.4em 1.1em 1.2em 1.1em; box-shadow:0 8px 32px #0003; display:flex; flex-direction:column; gap:10px; max-height:92vh; overflow:auto;}
@@ -59,13 +71,15 @@
             .ad-banner img {height:80px;}
             .goods-img { width:52px;height:52px;}
             .goods-card { width:48vw; min-width:132px;}
+            #item-panel {padding:1em .5em;}
+            #cart-panel {padding:1em .5em;}
         }
     </style>
 </head>
 <body>
-    <!-- 顶部广告，可替换你的banner图 -->
+    <!-- 顶部广告 -->
     <div class="ad-banner">
-        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner.png" alt="广告">
+        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner/coffee-banner.jpg" alt="广告">
     </div>
     <div class="main">
         <!-- 首页：分区商品列表 -->
@@ -83,7 +97,7 @@
             </div>
         </div>
     </div>
-    <!-- 底部导航栏 -->
+    <!-- 底部导航栏，四栏 -->
     <div class="nav-bar">
         <div class="nav-btn active" onclick="switchPage('home')">
             <svg width="22" height="22" fill="none"><rect x="3" y="8" width="16" height="11" rx="3" fill="currentColor"/><path d="M3 10L11 4l8 6" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -97,6 +111,29 @@
             <svg width="22" height="22" fill="none"><circle cx="11" cy="11" r="8" fill="currentColor"/><path d="M7 17h8M8 17v2h6v-2" stroke="#1a73e8" stroke-width="2"/><circle cx="15" cy="9" r="1" fill="#fff"/><circle cx="11" cy="9" r="1" fill="#fff"/><circle cx="7" cy="9" r="1" fill="#fff"/></svg>
             购物车
             <span id="cart-count" class="cart-count-dot" style="display:none"></span>
+        </div>
+        <div class="nav-btn" onclick="switchPage('me')">
+            <svg width="22" height="22" fill="none"><circle cx="11" cy="9" r="4" fill="currentColor"/><rect x="5" y="15" width="12" height="5" rx="3" fill="currentColor"/></svg>
+            我
+        </div>
+    </div>
+    <!-- 商品详情弹窗 -->
+    <div id="item-modal">
+        <div id="item-panel">
+            <img id="item-modal-img" class="item-modal-img" src="">
+            <div class="item-modal-title" id="item-modal-title"></div>
+            <div id="item-modal-tag"></div>
+            <div class="item-modal-desc" id="item-modal-desc"></div>
+            <div class="item-modal-specs" id="item-modal-specs"></div>
+            <div class="item-modal-qty">
+                <button class="item-qty-btn" onclick="changeModalQty(-1)">-</button>
+                <span id="item-modal-qty-val">1</span>
+                <button class="item-qty-btn" onclick="changeModalQty(1)">+</button>
+            </div>
+            <div class="item-modal-footer">
+                <button class="item-modal-cart-btn" onclick="addModalToCart()">加入购物车</button>
+                <button class="item-modal-close-btn" onclick="closeItemModal()">关闭</button>
+            </div>
         </div>
     </div>
     <!-- 购物车弹窗 -->
@@ -161,57 +198,95 @@
             return '🍽️';
         }
         function goodsCardHtml(item, idx){
-            let specs = [];
-            SPEC_NAMES.forEach(spec => {
-                if (item[spec] && item[spec].trim()) {
-                    specs.push({ spec, price: item[spec].trim() });
-                }
-            });
             let tag = item['标签(tag)']||'';
             let tagClass = tag.toLowerCase().includes('indica') ? 'badge tag-indica' :
                            tag.toLowerCase().includes('sativa') ? 'badge tag-sativa' : 'badge';
-            let specBtns = specs.map((s,i)=>`
-                <button class="goods-spec-btn" onclick="addToCart('${encodeURIComponent(JSON.stringify(item))}','${s.spec}','${s.price}');return false;">
-                    ${s.spec}<span class="goods-price">￥${s.price}</span>
-                </button>
-            `).join('');
             return `
-            <div class="goods-card">
+            <div class="goods-card" onclick="openItemModal('${encodeURIComponent(JSON.stringify(item))}')">
                 <img class="goods-img" src="${item['图片_URL']||''}" alt="${item['名称']}">
                 <div class="goods-title">
                     ${item['名称']}
                     ${tag?`<span class="${tagClass}">${tag}</span>`:""}
                 </div>
                 ${item['备注']?`<div class="goods-desc">${item['备注']}</div>`:""}
-                <div class="goods-specs">${specBtns}</div>
-                <button class="cart-btn" onclick="addToCart('${encodeURIComponent(JSON.stringify(item))}','${specs[0]?.spec}','${specs[0]?.price}');return false;">加入购物车</button>
             </div>
             `;
         }
-        // --- 购物车核心 ---
-        function addToCart(itemStr, spec, price) {
-            const item = JSON.parse(decodeURIComponent(itemStr));
-            if (!spec) {
+        // --- 商品详情弹窗 ---
+        let modalItem = null;
+        let modalSpec = '';
+        let modalPrice = 0;
+        let modalQty = 1;
+        function openItemModal(itemStr){
+            modalItem = JSON.parse(decodeURIComponent(itemStr));
+            modalSpec = '';
+            modalPrice = 0;
+            modalQty = 1;
+            document.getElementById('item-modal-img').src = modalItem['图片_URL']||'';
+            document.getElementById('item-modal-title').innerText = modalItem['名称'];
+            let tag = modalItem['标签(tag)']||'';
+            let tagClass = tag.toLowerCase().includes('indica') ? 'badge tag-indica' :
+                        tag.toLowerCase().includes('sativa') ? 'badge tag-sativa' : 'badge';
+            document.getElementById('item-modal-tag').innerHTML = tag?`<span class="${tagClass}">${tag}</span>`:"";
+            document.getElementById('item-modal-desc').innerText = modalItem['备注']||'';
+            // 渲染规格按钮
+            let specs = [];
+            SPEC_NAMES.forEach(spec => {
+                if (modalItem[spec] && modalItem[spec].trim()) {
+                    specs.push({ spec, price: modalItem[spec].trim() });
+                }
+            });
+            let specBtns = specs.map((s,i)=>`
+                <button class="item-spec-btn${i===0?' selected':''}" onclick="selectModalSpec('${s.spec}','${s.price}',this);return false;">
+                    ${s.spec}<span class="goods-price">￥${s.price}</span>
+                </button>
+            `).join('');
+            document.getElementById('item-modal-specs').innerHTML = specBtns;
+            if(specs.length){
+                modalSpec = specs[0].spec; modalPrice = Number(specs[0].price);
+            } else {
+                modalSpec = ''; modalPrice=0;
+            }
+            document.getElementById('item-modal-qty-val').innerText = modalQty;
+            document.getElementById('item-modal').style.display='flex';
+        }
+        function closeItemModal(){
+            document.getElementById('item-modal').style.display='none';
+        }
+        function selectModalSpec(spec, price, btn){
+            modalSpec = spec; modalPrice = Number(price);
+            document.querySelectorAll('.item-spec-btn').forEach(b=>b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+        function changeModalQty(delta){
+            modalQty+=delta;
+            if(modalQty<1) modalQty=1;
+            document.getElementById('item-modal-qty-val').innerText = modalQty;
+        }
+        function addModalToCart(){
+            if (!modalSpec) {
                 alert("请选择规格");
                 return;
             }
-            let idx = cart.findIndex(c => c.id === item.id && c.spec === spec);
+            let idx = cart.findIndex(c => c.id === modalItem.id && c.spec === modalSpec);
             if (idx >= 0) {
-                cart[idx].qty += 1;
+                cart[idx].qty += modalQty;
             } else {
                 cart.push({
-                    id: item.id,
-                    name: item['名称'],
-                    img: item['图片_URL'],
-                    tag: item['标签(tag)'],
-                    spec,
-                    price: Number(price),
-                    qty: 1
+                    id: modalItem.id,
+                    name: modalItem['名称'],
+                    img: modalItem['图片_URL'],
+                    tag: modalItem['标签(tag)'],
+                    spec: modalSpec,
+                    price: Number(modalPrice),
+                    qty: modalQty
                 });
             }
             updateCartBadge();
+            closeItemModal();
             showCartTip();
         }
+        // --- 购物车核心 ---
         function updateCartBadge() {
             let n = cart.reduce((s,c)=>s+c.qty,0);
             let badge = document.getElementById('cart-count');
@@ -314,8 +389,10 @@
             document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
             document.getElementById('page-'+p).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
-            let navOrder={'home':0,'orders':1,'me':2};
-            document.querySelectorAll('.nav-btn')[navOrder[p]].classList.add('active');
+            let navOrder={'home':0,'orders':1,'cart':2,'me':3};
+            if(p!=="cart"){ // 购物车为弹窗
+                document.querySelectorAll('.nav-btn')[navOrder[p]].classList.add('active');
+            }
         }
         switchPage('home');
         // --- Telegram登录信息 ---
