@@ -486,21 +486,25 @@
                 last_name: user.last_name || '',
                 items: cart
             };
-            let btn = e.target.querySelector('.cart-order-btn');
-            btn.disabled=true; btn.innerText="提交中...";
-            // 这里建议仍然通过你自己后端转存 Google Sheet，或 Apps Script doPost 写入
-            const resp = await fetch("https://script.google.com/macros/s/AKfycbwcVoQwPg7WMfgVusObG_oJhiLCAxprJyEYP6yR4ZWXsGnBGpEb-SMBN7toLpTwk_SR/exec", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            btn.disabled=false; btn.innerText="提交订单";
-            if (resp.ok) {
-                alert("下单成功！");
-                cart = []; updateCartBadge(); closeCartModal();
-            } else {
-                alert("提交失败，请稍后再试。");
-            }
+            let ok = false;
+try {
+    const resp = await fetch("https://script.google.com/macros/s/AKfycbwcVoQwPg7WMfgVusObG_oJhiLCAxprJyEYP6yR4ZlXsGnBGpEb-SMBN7toLpTwk_SR/exec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+    if (resp.ok) {
+        const data = await resp.json();
+        if(data.result === "ok") ok = true;
+    }
+} catch(e) {}
+btn.disabled=false; btn.innerText="提交订单";
+if(ok){
+    alert("下单成功！");
+    cart = []; updateCartBadge(); closeCartModal();
+}else{
+    alert("提交失败，请稍后再试。");
+}
         }
         // --- 订单历史页 ---
         async function loadOrderHistory(){
