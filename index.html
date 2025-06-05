@@ -489,7 +489,7 @@
             let btn = e.target.querySelector('.cart-order-btn');
             btn.disabled=true; btn.innerText="提交中...";
             // 这里建议仍然通过你自己后端转存 Google Sheet，或 Apps Script doPost 写入
-            const resp = await fetch("https://batmanshop.onrender.com/order", {
+            const resp = await fetch("https://script.google.com/macros/s/AKfycbwcVoQwPg7WMfgVusObG_oJhiLCAxprJyEYP6yR4ZWXsGnBGpEb-SMBN7toLpTwk_SR/exec", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
