@@ -67,14 +67,26 @@
         #cartForm input, #cartForm select {width:100%; padding:6px; border-radius:5px; border:1px solid #ccc;}
         .cart-order-btn { background:#1a73e8; color:#fff; border:none; border-radius:9px; font-size:1.05em; padding:9px 0; width:100%; }
         .cart-close-btn { background:#eee; color:#444; border:none; border-radius:7px; margin-top:-2px; padding:6px 0; width:100%; }
-        @media (max-width:600px) {
-            .main {padding-bottom:90px;}
-            .ad-banner {height:90px;}
-            .ad-banner img {height:80px;}
-            .goods-img { width:52px;height:52px;}
-            .goods-card { width:48vw; min-width:132px;}
-            #item-panel {padding:1em .5em;}
-            #cart-panel {padding:1em .5em;}
+        /* 我的页美化 */
+        .me-container { max-width:340px; margin:0 auto; padding:12px 0 18px 0;}
+        .me-card { background:#fff; border-radius:16px; box-shadow:0 4px 18px #0001; padding:18px 18px 14px 18px; margin-bottom:16px;}
+        #userInfoForm, #addressForm { display:flex; gap:10px; flex-wrap:wrap;}
+        #userInfoForm input, #addressForm input { flex:1; padding:8px 10px; font-size:1.03em; border:1px solid #ccc; border-radius:8px; background:#fafbfc;}
+        .me-btn-primary { background:#1a73e8; color:#fff; border:none; border-radius:8px; font-size:1em; padding:7px 18px; cursor:pointer; transition:all .18s;}
+        .me-btn-primary:active { background:#1763c5; }
+        #address-list .addr-row { display:flex;align-items:center;justify-content:space-between;background:#f5f7fa;padding:7px 12px;margin-bottom:7px;border-radius:8px;}
+        #address-list .addr-del { background:#ffcdd2;color:#b22;border:none;border-radius:6px;padding:3px 10px;font-size:.96em;cursor:pointer; }
+        #address-list .addr-del:active {background:#ffa1a1;}
+        @media (max-width:600px){
+          .me-container {padding:6px 0;}
+          .me-card {padding:13px 8px 10px 8px;}
+          .main {padding-bottom:90px;}
+          .ad-banner {height:90px;}
+          .ad-banner img {height:80px;}
+          .goods-img { width:52px;height:52px;}
+          .goods-card { width:48vw; min-width:132px;}
+          #item-panel {padding:1em .5em;}
+          #cart-panel {padding:1em .5em;}
         }
         /* 大图查看器 */
         #img-viewer { display:none; position:fixed;z-index:2000;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.97);align-items:center;justify-content:center;}
@@ -84,7 +96,7 @@
 <body>
     <!-- 顶部广告 -->
     <div class="ad-banner">
-        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner.png" alt="广告">
+        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner/coffee-banner.jpg" alt="广告">
     </div>
     <div class="main">
         <!-- 首页：分区商品列表 -->
@@ -97,22 +109,39 @@
         </div>
         <!-- 我的 -->
         <div class="page" id="page-me">
-            <div style="max-width:320px;margin:0 auto;">
-                <div style="font-size:1.07em;font-weight:600;margin:12px 0 8px 0;">下单人信息</div>
-                <form id="userInfoForm" onsubmit="saveUserInfo(event)">
-                    <label>姓名：<input name="name" required placeholder="请输入您的姓名"></label>
-                    <label>电话：<input name="phone" required placeholder="手机号"></label>
-                    <button type="submit" class="cart-order-btn" style="margin-top:13px;">保存信息</button>
-                </form>
-                <div id="user-info-saved" style="color:#4caf50;font-weight:500;display:none;margin-top:8px;">已保存，下单自动带入！</div>
-                <div style="font-size:1.07em;font-weight:600;margin:18px 0 8px 0;">送货地址</div>
-                <div id="address-list"></div>
-                <form id="addressForm" onsubmit="addAddress(event)" style="margin-bottom:13px;">
-                    <input name="address" required placeholder="请输入新地址" style="width:75%">
-                    <button type="submit" style="padding:5px 10px;border-radius:6px;background:#1a73e8;color:#fff;border:none;margin-left:5px;">添加</button>
-                </form>
-                <div id="telegram-info" style="margin-top:23px;"></div>
+          <div class="me-container">
+            <!-- 用户信息卡片 -->
+            <div class="me-card">
+              <div style="display:flex;align-items:center;gap:13px;">
+                <img src="https://telegram.org/img/t_logo.png" width="40" style="border-radius:50%;background:#f7f7fa;">
+                <div style="flex:1">
+                  <div id="me-nick" style="font-size:1.11em;font-weight:600;"></div>
+                  <div id="me-uid" style="color:#999;font-size:.97em;margin-top:1px;"></div>
+                </div>
+              </div>
             </div>
+            <!-- 下单人信息表单 -->
+            <div class="me-card">
+              <div style="font-size:1.09em;font-weight:600;margin-bottom:10px;">收件人信息</div>
+              <form id="userInfoForm" onsubmit="saveUserInfo(event)" autocomplete="off" style="display:flex;gap:9px;flex-wrap:wrap;">
+                <input name="name" required placeholder="姓名">
+                <input name="phone" required placeholder="电话">
+                <button type="submit" class="me-btn-primary" id="user-info-save-btn">保存</button>
+                <span id="user-info-saved" style="color:#4caf50;font-weight:500;display:none;margin-left:13px;font-size:.96em;">✔ 已保存</span>
+              </form>
+            </div>
+            <!-- 地址管理 -->
+            <div class="me-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="font-size:1.09em;font-weight:600;">送货地址</div>
+              </div>
+              <div id="address-list" style="margin-bottom:8px;"></div>
+              <form id="addressForm" onsubmit="addAddress(event)" style="display:flex;gap:7px;">
+                <input name="address" required placeholder="添加新地址">
+                <button type="submit" class="me-btn-primary" style="white-space:nowrap;">添加</button>
+              </form>
+            </div>
+          </div>
         </div>
     </div>
     <!-- 底部导航栏，四栏 -->
@@ -324,7 +353,6 @@
             }
         }
         function showCartTip() {
-            // 简单动画，加入购物车时提示
             let badge = document.getElementById('cart-count');
             badge.animate([
                 {transform:'scale(1.3)',background:'#ffb940'},
@@ -375,15 +403,14 @@
             cart.splice(idx,1);
             renderCartList(); updateCartBadge();
         }
-
         // --- 地址管理 ---
         function renderAddressList(){
             let addrs = JSON.parse(localStorage.getItem('batman_addr_list')||'[]');
             let list = addrs.map((addr,idx)=>`
-                <div style="margin-bottom:7px;display:flex;align-items:center;">
-                    <span style="flex:1">${addr}</span>
-                    <button onclick="delAddress(${idx})" style="background:#ffbaba;color:#b22;border:none;border-radius:5px;padding:2px 7px;">删</button>
-                </div>
+              <div class="addr-row">
+                <span style="flex:1;word-break:break-all;">${addr}</span>
+                <button class="addr-del" onclick="delAddress(${idx})">删除</button>
+              </div>
             `).join('');
             document.getElementById('address-list').innerHTML = list || '<div style="color:#aaa;">暂无地址</div>';
         }
@@ -415,7 +442,6 @@
                 sel.disabled = false;
             }
         }
-
         // --- 提交购物车订单 ---
         async function submitCartOrder(e) {
             e.preventDefault();
@@ -428,7 +454,6 @@
                 alert("购物车是空的");
                 return;
             }
-            // 取本地用户信息
             const raw = localStorage.getItem('batman_user_info');
             if(!raw){
                 document.getElementById('cart-user-tips').innerText = "请先在“我”页面填写姓名和电话";
@@ -437,7 +462,6 @@
             }
             document.getElementById('cart-user-tips').style.display = 'none';
             const userInfo = JSON.parse(raw);
-            // 获取备注和地址
             const formData = Object.fromEntries(new FormData(e.target));
             let payload = {
                 ...userInfo,
@@ -481,7 +505,7 @@
             const d = Object.fromEntries(new FormData(e.target));
             localStorage.setItem('batman_user_info', JSON.stringify(d));
             document.getElementById('user-info-saved').style.display = '';
-            setTimeout(()=>{ document.getElementById('user-info-saved').style.display = 'none'; }, 2000);
+            setTimeout(()=>{ document.getElementById('user-info-saved').style.display = 'none'; }, 1400);
         }
         function loadUserInfo(){
             const raw = localStorage.getItem('batman_user_info');
@@ -490,6 +514,17 @@
                 const f = document.getElementById('userInfoForm');
                 f.name.value = d.name||"";
                 f.phone.value = d.phone||"";
+            }
+        }
+        // --- 用户昵称与ID自动渲染 ---
+        function renderUserMiniProfile(){
+            if(window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user){
+                const user = Telegram.WebApp.initDataUnsafe.user;
+                document.getElementById('me-nick').innerText = user.first_name+(user.last_name?(' '+user.last_name):'');
+                document.getElementById('me-uid').innerText = user.username?('@'+user.username):('ID: '+user.id);
+            } else {
+                document.getElementById('me-nick').innerText = '未检测到 Telegram';
+                document.getElementById('me-uid').innerText = '';
             }
         }
         // --- 大图查看器 ---
@@ -501,19 +536,14 @@
                 if(e.target === viewer) viewer.style.display = 'none';
             }
         }
-        // --- Telegram登录信息和初始化 ---
+        // --- 初始化 ---
         window.onload = function () {
             loadMenuFromSheet();
             loadUserInfo(); // 自动填充
             renderAddressList();
+            renderUserMiniProfile();
             if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
-                const user = Telegram.WebApp.initDataUnsafe.user;
-                window.telegramUser = user;
-                document.getElementById('telegram-info').innerHTML =
-                    `<b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#888">(ID: ${user.id})</span><br>${user.username ? '@'+user.username : ''}`;
-            } else {
-                document.getElementById('telegram-info').innerHTML =
-                    `<span style="color:#e55">请在 Telegram 内部打开（点击菜单/按钮进入）</span>`;
+                window.telegramUser = Telegram.WebApp.initDataUnsafe.user;
             }
         }
     </script>
