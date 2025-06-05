@@ -300,9 +300,9 @@
             // 渲染规格按钮
             let specs = [];
             SPEC_NAMES.forEach(spec => {
-                if (modalItem[spec] && modalItem[spec].trim()) {
-                    specs.push({ spec, price: modalItem[spec].trim() });
-                }
+                if (modalItem[spec] !== undefined && modalItem[spec] !== null && (modalItem[spec]+'' ).trim() !== '') {
+    specs.push({ spec, price: (modalItem[spec]+'').trim() });
+}
             });
             let specBtns = specs.map((s,i)=>`
                 <button class="item-spec-btn${i===0?' selected':''}" onclick="selectModalSpec('${s.spec}','${s.price}',this);return false;">
