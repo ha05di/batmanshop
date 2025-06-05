@@ -2,178 +2,245 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Batman1788 下单表单</title>
+    <title>Batman1788 商城</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
-        body { background:#f3f5f8; font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; }
-        .container { max-width:420px; margin:40px auto; background:#fff; border-radius:16px; box-shadow:0 2px 10px #0001; padding:2em; }
-        h2 { text-align:center; }
-        label { display:block; margin:1em 0 .5em 0; color:#222; }
-        select, input { width:100%; margin-top:4px; padding:6px; border-radius:6px; border:1px solid #ccc; }
-        button { margin-top:2em; width:100%; background:#222; color:#fff; border:none; border-radius:8px; font-size:1.1em; padding:.8em 0; }
-        .item-img { width:64px; height:64px; object-fit:cover; border-radius:10px; border:1px solid #eee; margin-right:12px; }
-        .spec-row { display:flex; align-items:center; gap:10px; }
-        .item-desc { color:#888; font-size:.92em; margin-bottom:.3em; }
-        .badge { display:inline-block; background:#ffd700; color:#444; font-size:.8em; border-radius:7px; padding:1px 7px; margin-left:8px; }
+        body { margin:0; background:#f3f5f8; font-family:'Segoe UI','Microsoft YaHei',Arial,sans-serif; }
+        .ad-banner { width:100%; height:120px; background:#1b1c1e; border-radius:0 0 20px 20px; overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+        .ad-banner img { width:98%; height:110px; object-fit:cover; border-radius:18px; box-shadow:0 2px 10px #0002; }
+        .main { padding:8px 10px 70px 10px; max-width:520px; margin:0 auto; }
+        .category-block { margin-bottom:18px; }
+        .category-title { font-size:1.13em; font-weight:700; margin:14px 0 7px 5px; display:flex; align-items:center; gap:7px;}
+        .goods-list { display:flex; flex-wrap:wrap; gap:14px; }
+        .goods-card { background:#fff; border-radius:15px; box-shadow:0 2px 8px #0001; padding:13px 12px; display:flex; flex-direction:column; width:154px; min-height:200px; align-items:center; position:relative;}
+        .goods-img { width:66px; height:66px; object-fit:cover; border-radius:11px; border:1px solid #eee; background:#fafbfc; margin-bottom:8px; }
+        .goods-title { font-size:1.03em; font-weight:600; margin-bottom:2px; text-align:center;}
+        .badge { display:inline-block; background:#ffb940; color:#543; font-size:.93em; border-radius:7px; padding:1.5px 10px; margin-left:6px; margin-bottom:3px;}
+        .tag-indica { background:#b6a7f5; color:#333; }
+        .tag-sativa { background:#ffbb66; color:#222; }
+        .goods-specs { margin:5px 0 0 0; text-align:center; }
+        .goods-spec-btn { margin:3px 4px 0 0; border:none; border-radius:7px; background:#eee; padding:2px 10px; font-size:.99em; cursor:pointer; }
+        .goods-spec-btn.selected { background:#1a73e8; color:#fff; }
+        .goods-price { color:#e91e63; font-size:.97em; font-weight:600; margin-left:3px;}
+        .order-btn { background:#222; color:#fff; border:none; border-radius:8px; padding:6px 15px; font-size:.98em; margin-top:7px; cursor:pointer; }
+        .goods-desc { color:#888; font-size:.91em; margin:2px 0 0 0;text-align:center;}
+        .nav-bar { position:fixed; left:0; right:0; bottom:0; height:55px; background:#fff; border-top:1px solid #eee; display:flex; justify-content:space-around; align-items:center; box-shadow:0 -2px 10px #0001; z-index:10;}
+        .nav-btn { flex:1; text-align:center; color:#666; font-size:.98em; padding-top:5px;}
+        .nav-btn.active { color:#1a73e8; font-weight:600;}
+        .nav-btn svg { display:block; margin:0 auto 2px auto;}
+        /* 页面切换隐藏 */
+        .page { display:none; }
+        .page.active { display:block; }
+        @media (max-width:600px) {
+            .main {padding-bottom:90px;}
+            .ad-banner {height:90px;}
+            .ad-banner img {height:80px;}
+            .goods-img { width:52px;height:52px;}
+            .goods-card { width:48vw; min-width:132px;}
+        }
     </style>
+</head>
+<body>
+    <!-- 顶部广告，可替换你的banner图 -->
+    <div class="ad-banner">
+        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner/coffee-banner.jpg" alt="广告">
+    </div>
+    <div class="main">
+        <!-- 首页：分区商品列表 -->
+        <div class="page" id="page-home">
+            <div id="main-content"></div>
+        </div>
+        <!-- 订单列表 -->
+        <div class="page" id="page-orders">
+            <div style="text-align:center; color:#888; margin-top:40px;">暂未实现订单历史，可后续对接</div>
+        </div>
+        <!-- 我的 -->
+        <div class="page" id="page-me">
+            <div style="text-align:center; color:#888; margin-top:40px;">
+                <div id="telegram-info"></div>
+            </div>
+        </div>
+    </div>
+    <!-- 底部导航栏 -->
+    <div class="nav-bar">
+        <div class="nav-btn active" onclick="switchPage('home')">
+            <svg width="22" height="22" fill="none"><rect x="3" y="8" width="16" height="11" rx="3" fill="currentColor"/><path d="M3 10L11 4l8 6" stroke="#1a73e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            首页
+        </div>
+        <div class="nav-btn" onclick="switchPage('orders')">
+            <svg width="22" height="22" fill="none"><rect x="3" y="4" width="16" height="14" rx="3" fill="currentColor"/><path d="M7 8h8M7 12h5" stroke="#1a73e8" stroke-width="2" stroke-linecap="round"/></svg>
+            订单
+        </div>
+        <div class="nav-btn" onclick="switchPage('me')">
+            <svg width="22" height="22" fill="none"><circle cx="11" cy="9" r="4" fill="currentColor"/><rect x="5" y="15" width="12" height="5" rx="3" fill="currentColor"/></svg>
+            我的
+        </div>
+    </div>
+    <!-- 下单弹窗 -->
+    <div id="order-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;background:#0005;align-items:center;justify-content:center;">
+        <form id="orderForm" style="background:#fff;max-width:340px;width:92%;margin:0 auto;padding:2em 1.4em;border-radius:16px;box-shadow:0 8px 32px #0003;display:flex;flex-direction:column;gap:12px;" onsubmit="submitOrder(event)">
+            <div style="text-align:center;font-size:1.1em;font-weight:600" id="modal-title"></div>
+            <div style="display:flex;gap:12px;align-items:center;justify-content:center;">
+                <img id="modal-img" src="" style="width:54px;height:54px;border-radius:10px;">
+                <span id="modal-spec"></span>
+            </div>
+            <input type="hidden" name="item">
+            <input type="hidden" name="img">
+            <input type="hidden" name="tag">
+            <input type="hidden" name="spec">
+            <input type="hidden" name="price">
+            <label>姓名：<input name="name" required placeholder="请输入您的姓名"></label>
+            <label>电话：<input name="phone" required placeholder="手机号"></label>
+            <label>数量：<input name="qty" type="number" value="1" min="1"></label>
+            <label>备注：<input name="note" placeholder="可选"></label>
+            <button type="submit" id="order-submit-btn">提交订单</button>
+            <button type="button" onclick="closeModal()" style="background:#eee;color:#444;margin-top:-6px;">取消</button>
+        </form>
+    </div>
     <script>
+        // Sheet 菜单拉取与分类分区渲染
         let MENU = [];
-        let SPEC_NAMES = ["Q", "H", "OZ"]; // Sheet规格列名（根据你的sheet定制）
-
+        let SPEC_NAMES = ["Q", "H", "OZ"]; // 可以自定义
         function loadMenuFromSheet() {
             const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs/export?format=csv&gid=0";
             Papa.parse(SHEET_CSV_URL, {
                 download: true,
                 header: true,
                 complete: function(results) {
-                    // 过滤掉无“名称”的行
                     MENU = results.data.filter(row => row['名称'] && row['是否上架'] !== 'N');
-                    buildMenuList();
+                    buildCategorySections();
                 }
             });
         }
-
-        function buildMenuList() {
-            const menuList = document.getElementById('menu-list');
-            menuList.innerHTML = "";
-
-            MENU.forEach((item, idx) => {
-                // 每种规格自动识别
-                let specs = [];
-                SPEC_NAMES.forEach(spec => {
-                    if (item[spec] && item[spec].trim()) {
-                        specs.push({ spec, price: item[spec].trim() });
-                    }
-                });
-                // 主体渲染
-                menuList.innerHTML += `
-                <div class="menu-item" style="display:flex;align-items:flex-start;margin-bottom:1.5em;gap:16px;">
-                    <img class="item-img" src="${item['图片_URL']||''}" alt="${item['名称']}">
-                    <div style="flex:1">
-                        <div style="font-weight:bold;font-size:1.1em">
-                            ${item['名称']}
-                            ${item['标签(tag)'] ? `<span class="badge">${item['标签(tag)']}</span>` : ''}
-                        </div>
-                        ${item['备注'] ? `<div class="item-desc">${item['备注']}</div>` : ''}
-                        <div class="spec-row">
-                            ${specs.map(s=>`
-                                <label>
-                                    <input type="radio" name="spec_${idx}" value="${s.spec}:${s.price}" ${s===specs[0]?'checked':''}/>
-                                    ${s.spec} <span style="color:#f55">￥${s.price}</span>
-                                </label>
-                            `).join('')}
-                        </div>
+        function buildCategorySections() {
+            const cats = {};
+            MENU.forEach(item => {
+                const cat = (item['分类']||'未分类').trim();
+                if (!cats[cat]) cats[cat]=[];
+                cats[cat].push(item);
+            });
+            const main = document.getElementById('main-content');
+            main.innerHTML = '';
+            Object.entries(cats).forEach(([cat, items])=>{
+                main.innerHTML += `
+                <div class="category-block">
+                    <div class="category-title">${catIcon(cat)} ${cat}</div>
+                    <div class="goods-list">
+                        ${items.map((item,idx)=>goodsCardHtml(item, idx)).join('')}
                     </div>
                 </div>
                 `;
             });
-
-            buildOrderForm();
         }
-
-        function buildOrderForm() {
-            // 动态填充菜单下拉
-            const orderSelect = document.getElementById('order-item-select');
-            orderSelect.innerHTML = '';
-            MENU.forEach((item, idx) => {
-                orderSelect.innerHTML += `<option value="${idx}">${item['名称']}</option>`;
-            });
-            orderSelect.onchange = () => showSpecOptions(orderSelect.value);
-            showSpecOptions(0); // 默认显示第一个
+        function catIcon(cat){
+            if(cat.match(/food|食物/i)) return '🍚';
+            if(cat.match(/drink|饮料/i)) return '🥤';
+            if(cat.match(/dessert|甜品/i)) return '🍰';
+            if(cat.match(/snack|小吃/i)) return '🍢';
+            return '🍽️';
         }
-
-        function showSpecOptions(menuIdx) {
-            const item = MENU[menuIdx];
-            const specDiv = document.getElementById('order-spec-div');
-            specDiv.innerHTML = "";
+        function goodsCardHtml(item, idx){
+            let specs = [];
             SPEC_NAMES.forEach(spec => {
                 if (item[spec] && item[spec].trim()) {
-                    specDiv.innerHTML += `
-                        <label>
-                            <input type="radio" name="order_spec" value="${spec}:${item[spec].trim()}" />
-                            ${spec} <span style="color:#f55">￥${item[spec].trim()}</span>
-                        </label>
-                    `;
+                    specs.push({ spec, price: item[spec].trim() });
                 }
             });
-            // 默认选中第一个
-            let first = specDiv.querySelector('input[type=radio]');
-            if (first) first.checked = true;
+            let tag = item['标签(tag)']||'';
+            let tagClass = tag.toLowerCase().includes('indica') ? 'badge tag-indica' :
+                           tag.toLowerCase().includes('sativa') ? 'badge tag-sativa' : 'badge';
+            // 多规格按钮
+            let specBtns = specs.map((s,i)=>`
+                <button class="goods-spec-btn" onclick="openOrderModal('${encodeURIComponent(JSON.stringify(item))}','${s.spec}','${s.price}');return false;">
+                    ${s.spec}<span class="goods-price">￥${s.price}</span>
+                </button>
+            `).join('');
+            return `
+            <div class="goods-card">
+                <img class="goods-img" src="${item['图片_URL']||''}" alt="${item['名称']}">
+                <div class="goods-title">
+                    ${item['名称']}
+                    ${tag?`<span class="${tagClass}">${tag}</span>`:""}
+                </div>
+                ${item['备注']?`<div class="goods-desc">${item['备注']}</div>`:""}
+                <div class="goods-specs">${specBtns}</div>
+            </div>
+            `;
+        }
+        // 底部导航栏切换
+        function switchPage(p){
+            document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+            document.getElementById('page-'+p).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+            let navOrder={'home':0,'orders':1,'me':2};
+            document.querySelectorAll('.nav-btn')[navOrder[p]].classList.add('active');
+        }
+        switchPage('home');
+
+        // 下单弹窗逻辑
+        function openOrderModal(itemStr,spec,price){
+            const item = JSON.parse(decodeURIComponent(itemStr));
+            document.getElementById('modal-title').innerText = item['名称'];
+            document.getElementById('modal-img').src = item['图片_URL']||'';
+            document.getElementById('modal-spec').innerHTML = `<span class="badge">${spec}</span> <span class="goods-price">￥${price}</span>`;
+            // 填充隐藏字段
+            let f = document.getElementById('orderForm');
+            f.item.value = item['名称'];
+            f.img.value = item['图片_URL']||'';
+            f.tag.value = item['标签(tag)']||'';
+            f.spec.value = spec;
+            f.price.value = price;
+            document.getElementById('order-modal').style.display='flex';
+        }
+        function closeModal(){
+            document.getElementById('order-modal').style.display='none';
         }
 
-        window.onload = function () {
-            loadMenuFromSheet();
-
-            if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
-                const user = Telegram.WebApp.initDataUnsafe.user;
-                document.getElementById('telegram-info').innerHTML =
-                    `已登录：<b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#666">(ID: ${user.id})</span>`;
-                document.getElementById('orderForm').style.display = 'block';
-                window.telegramUser = user;
-            } else {
-                document.getElementById('telegram-info').innerHTML =
-                    `<span style="color:#f55">请在 Telegram 内部打开（点击菜单/按钮进入）</span>`;
-                document.getElementById('orderForm').style.display = 'none';
-            }
-        }
-
-        async function submitOrder(e) {
+        // 订单提交
+        async function submitOrder(e){
             e.preventDefault();
             const user = window.telegramUser;
             if (!user) {
                 alert("请在 Telegram 内部打开本页面");
                 return;
             }
-            const idx = document.getElementById('order-item-select').value;
-            const item = MENU[idx];
-            const specRadio = document.querySelector('input[name=order_spec]:checked');
-            if (!specRadio) { alert("请选择规格"); return; }
-            const [spec, price] = specRadio.value.split(':');
-            const formData = Object.fromEntries(new FormData(e.target));
+            let formData = Object.fromEntries(new FormData(e.target));
             formData.telegram_id = user.id;
             formData.telegram_name = user.username || '';
             formData.first_name = user.first_name || '';
             formData.last_name = user.last_name || '';
-            formData.item = item['名称'];
-            formData.img = item['图片_URL'];
-            formData.tag = item['标签(tag)'];
-            formData.spec = spec;
-            formData.price = price;
-            // POST 到 Flask 服务器
+            document.getElementById('order-submit-btn').disabled=true;
+            document.getElementById('order-submit-btn').innerText='提交中...';
             const resp = await fetch("https://batmanshop.onrender.com/order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
             });
+            document.getElementById('order-submit-btn').disabled=false;
+            document.getElementById('order-submit-btn').innerText='提交订单';
             if (resp.ok) {
                 alert("下单成功！");
-                e.target.reset();
+                closeModal();
             } else {
                 alert("提交失败，请稍后再试。");
             }
         }
+
+        // Telegram登录信息
+        window.onload = function () {
+            loadMenuFromSheet();
+            if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
+                const user = Telegram.WebApp.initDataUnsafe.user;
+                window.telegramUser = user;
+                document.getElementById('telegram-info').innerHTML =
+                    `<b>${user.first_name || ''} ${user.last_name || ''}</b> <span style="color:#888">(ID: ${user.id})</span><br>${user.username ? '@'+user.username : ''}`;
+            } else {
+                document.getElementById('telegram-info').innerHTML =
+                    `<span style="color:#e55">请在 Telegram 内部打开（点击菜单/按钮进入）</span>`;
+            }
+        }
     </script>
-</head>
-<body>
-    <div class="container">
-        <h2>Batman1788 下单表单</h2>
-        <div id="telegram-info">正在检测 Telegram 登录...</div>
-        <div id="menu-list"></div>
-        <form id="orderForm" style="display:none" onsubmit="submitOrder(event)">
-            <label>姓名：<input name="name" required placeholder="请输入您的姓名"></label>
-            <label>电话：<input name="phone" required placeholder="手机号"></label>
-            <label>商品：
-                <select id="order-item-select" name="item"></select>
-            </label>
-            <label>规格：
-                <div id="order-spec-div"></div>
-            </label>
-            <label>数量：<input name="qty" type="number" value="1" min="1"></label>
-            <label>备注：<input name="note" placeholder="可选"></label>
-            <button type="submit">提交订单</button>
-        </form>
-    </div>
 </body>
 </html>
