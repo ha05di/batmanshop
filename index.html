@@ -77,6 +77,13 @@
         #address-list .addr-row { display:flex;align-items:center;justify-content:space-between;background:#f5f7fa;padding:7px 12px;margin-bottom:7px;border-radius:8px;}
         #address-list .addr-del { background:#ffcdd2;color:#b22;border:none;border-radius:6px;padding:3px 10px;font-size:.96em;cursor:pointer; }
         #address-list .addr-del:active {background:#ffa1a1;}
+        /* 订单历史卡片 */
+        .order-card { background:#fff; border-radius:13px; box-shadow:0 2px 8px #0001; padding:15px 12px 11px 12px; margin-bottom:15px; }
+        .order-header { font-size:1.01em;font-weight:600;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+        .order-status { font-size:.98em; color:#1a73e8; font-weight:600;}
+        .order-addr { color:#888; font-size:.95em; margin-bottom:3px;}
+        .order-items { font-size:.97em;margin-bottom:5px;}
+        .order-note { color:#ff9000;font-size:.93em;margin-bottom:4px;}
         @media (max-width:600px){
           .me-container {padding:6px 0;}
           .me-card {padding:13px 8px 10px 8px;}
@@ -96,16 +103,21 @@
 <body>
     <!-- 顶部广告 -->
     <div class="ad-banner">
-        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner.png" alt="广告">
+        <img src="https://raw.githubusercontent.com/ha05di/batman1788Menu/main/banner/coffee-banner.jpg" alt="广告">
     </div>
     <div class="main">
-        <!-- 首页：分区商品列表 -->
+        <!-- 首页菜单 -->
         <div class="page" id="page-home">
             <div id="main-content"></div>
         </div>
-        <!-- 订单列表 -->
+        <!-- 订单历史 -->
         <div class="page" id="page-orders">
-            <div style="text-align:center; color:#888; margin-top:40px;">暂未实现订单历史，可后续对接</div>
+          <div style="max-width:360px;margin:0 auto;">
+            <div class="orders-title" style="font-size:1.12em;font-weight:700;margin:12px 0 10px 0;">我的订单</div>
+            <div id="orders-list">
+              <div style="color:#aaa;text-align:center;margin-top:40px;">正在加载订单…</div>
+            </div>
+          </div>
         </div>
         <!-- 我的 -->
         <div class="page" id="page-me">
@@ -169,7 +181,7 @@
         <div id="item-panel">
             <img id="item-modal-img" class="item-modal-img" src="" onclick="showImgViewer(this.src)">
             <div class="item-modal-title" id="item-modal-title"></div>
-            <div id="item-modal-tag"></div>
+            <div class="item-modal-tag" id="item-modal-tag"></div>
             <div class="item-modal-desc" id="item-modal-desc"></div>
             <div class="item-modal-specs" id="item-modal-specs"></div>
             <div class="item-modal-qty">
@@ -209,21 +221,22 @@
         <img id="img-viewer-pic" src="" style="max-width:95vw;max-height:85vh;border-radius:20px;box-shadow:0 4px 40px #0007;transition:all .2s;">
     </div>
     <script>
-        // --- 全局数据 ---
+        // === 全局变量 ===
         let MENU = [];
         let SPEC_NAMES = ["Q", "H", "OZ"];
         let cart = [];
-        // --- Sheet 拉取与分类分区渲染 ---
+
+        // Google Apps Script API 地址
+        const SHEET_API = "https://script.google.com/macros/s/AKfycbxnvmEvUOwcdl0mOq1pqYIuELIDkN8ZOGe4H-ed2eIa9yMBxrPqALN2hQy5jCtJ6gmA/exec";
+
+        // --- Sheet 菜单拉取与分类分区渲染 ---
         function loadMenuFromSheet() {
-            const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hUlRnvEy-k2Arz8SVKpRsAaBEFTyS6RDJBDfwDmM-Hs/export?format=csv&gid=0";
-            Papa.parse(SHEET_CSV_URL, {
-                download: true,
-                header: true,
-                complete: function(results) {
-                    MENU = results.data.filter(row => row['名称'] && row['是否上架'] !== 'N');
+            fetch(`${SHEET_API}?sheet=menu`)
+                .then(resp => resp.json())
+                .then(data => {
+                    MENU = data.filter(row => row['名称'] && (!row['是否上架'] || row['是否上架'] !== 'N'));
                     buildCategorySections();
-                }
-            });
+                });
         }
         function buildCategorySections() {
             const cats = {};
@@ -475,6 +488,7 @@
             };
             let btn = e.target.querySelector('.cart-order-btn');
             btn.disabled=true; btn.innerText="提交中...";
+            // 这里建议仍然通过你自己后端转存 Google Sheet，或 Apps Script doPost 写入
             const resp = await fetch("https://batmanshop.onrender.com/order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -488,15 +502,53 @@
                 alert("提交失败，请稍后再试。");
             }
         }
+        // --- 订单历史页 ---
+        async function loadOrderHistory(){
+            const user = window.telegramUser;
+            if(!user) {
+              document.getElementById('orders-list').innerHTML = '<div style="color:#e55;">请在 Telegram 打开本小程序</div>';
+              return;
+            }
+            document.getElementById('orders-list').innerHTML = '<div style="color:#aaa;text-align:center;margin-top:40px;">正在加载订单…</div>';
+            try {
+              let resp = await fetch(`${SHEET_API}?sheet=orders&telegram_id=${user.id}`);
+              let orders = await resp.json();
+              if(!orders.length) {
+                document.getElementById('orders-list').innerHTML = '<div style="color:#aaa;text-align:center;margin-top:50px;">暂无历史订单</div>';
+                return;
+              }
+              document.getElementById('orders-list').innerHTML = orders.map(renderOrderCard).join('');
+            } catch(e){
+              document.getElementById('orders-list').innerHTML = '<div style="color:#e55;">订单获取失败，请稍后再试</div>';
+            }
+        }
+        function renderOrderCard(order){
+            return `<div class="order-card">
+              <div class="order-header">
+                <span>订单号：${order['订单号']||'-'}</span>
+                <span class="order-status">${order['状态']||''}</span>
+              </div>
+              <div class="order-addr">${order['地址']||''}</div>
+              <div class="order-items">
+                ${order.items ? order.items.map(x=>
+                    `${x.name}${x.spec?'('+x.spec+')':''} ×${x.qty} <span style="float:right;">￥${x.price*x.qty}</span>`
+                  ).join('<br>') : ''}
+              </div>
+              ${order['备注']?`<div class="order-note">备注：${order['备注']}</div>`:""}
+              <div style="color:#888;font-size:.92em;margin-top:5px;">${order['创建时间']||''}</div>
+              <div style="font-weight:600;font-size:1.05em;margin-top:2px;">总计：￥${order['总价']||'0'}</div>
+            </div>`;
+        }
         // --- 底部导航栏切换 ---
         function switchPage(p){
             document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
             document.getElementById('page-'+p).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
             let navOrder={'home':0,'orders':1,'cart':2,'me':3};
-            if(p!=="cart"){ // 购物车为弹窗
+            if(p!=="cart"){ 
                 document.querySelectorAll('.nav-btn')[navOrder[p]].classList.add('active');
             }
+            if(p==="orders") loadOrderHistory();
         }
         switchPage('home');
         // --- 用户信息保存和读取 ---
@@ -505,46 +557,42 @@
             const d = Object.fromEntries(new FormData(e.target));
             localStorage.setItem('batman_user_info', JSON.stringify(d));
             document.getElementById('user-info-saved').style.display = '';
-            setTimeout(()=>{ document.getElementById('user-info-saved').style.display = 'none'; }, 1400);
+            setTimeout(()=>{ document.getElementById('user-info-saved').style.display='none'; }, 1200);
         }
         function loadUserInfo(){
-            const raw = localStorage.getItem('batman_user_info');
+            let raw = localStorage.getItem('batman_user_info');
             if(raw){
-                const d = JSON.parse(raw);
-                const f = document.getElementById('userInfoForm');
-                f.name.value = d.name||"";
-                f.phone.value = d.phone||"";
+                let d = JSON.parse(raw);
+                document.querySelectorAll("#userInfoForm input[name=name]").forEach(x=>x.value=d.name||'');
+                document.querySelectorAll("#userInfoForm input[name=phone]").forEach(x=>x.value=d.phone||'');
             }
         }
-        // --- 用户昵称与ID自动渲染 ---
-        function renderUserMiniProfile(){
-            if(window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user){
-                const user = Telegram.WebApp.initDataUnsafe.user;
-                document.getElementById('me-nick').innerText = user.first_name+(user.last_name?(' '+user.last_name):'');
-                document.getElementById('me-uid').innerText = user.username?('@'+user.username):('ID: '+user.id);
-            } else {
-                document.getElementById('me-nick').innerText = '未检测到 Telegram';
+        // --- 用户Telegram资料填充 ---
+        function fillMeInfo(){
+            if(window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user){
+                let u = Telegram.WebApp.initDataUnsafe.user;
+                document.getElementById('me-nick').innerText = u.first_name + (u.last_name?(' '+u.last_name):'');
+                document.getElementById('me-uid').innerText = "ID: " + u.id + (u.username ? (" @" + u.username) : "");
+                window.telegramUser = u;
+            }else{
+                document.getElementById('me-nick').innerText = '';
                 document.getElementById('me-uid').innerText = '';
+                window.telegramUser = null;
             }
         }
         // --- 大图查看器 ---
-        function showImgViewer(src) {
-            const viewer = document.getElementById('img-viewer');
+        function showImgViewer(src){
+            let v = document.getElementById('img-viewer');
             document.getElementById('img-viewer-pic').src = src;
-            viewer.style.display = 'flex';
-            viewer.onclick = function(e){
-                if(e.target === viewer) viewer.style.display = 'none';
-            }
+            v.style.display = 'flex';
+            v.onclick = ()=>{ v.style.display='none'; }
         }
         // --- 初始化 ---
-        window.onload = function () {
+        window.onload = function(){
+            fillMeInfo();
             loadMenuFromSheet();
-            loadUserInfo(); // 自动填充
+            loadUserInfo();
             renderAddressList();
-            renderUserMiniProfile();
-            if (window.Telegram.WebApp && Telegram.WebApp.initDataUnsafe.user) {
-                window.telegramUser = Telegram.WebApp.initDataUnsafe.user;
-            }
         }
     </script>
 </body>
